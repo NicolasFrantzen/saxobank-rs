@@ -1,11 +1,10 @@
 use crate::port;
 use crate::OpenAPIRequest;
 
-use reqwest::header::{HeaderValue, HeaderMap};
+use reqwest::header::{HeaderMap, HeaderValue};
 use serde::Deserialize;
 
 use std::borrow::Cow;
-
 
 #[derive(Clone, Copy)]
 enum Env {
@@ -39,8 +38,11 @@ impl OpenAPIClient {
     fn new(environment: Env, token: &str) -> Self {
         let mut headers = HeaderMap::new();
         headers.insert("Accept", HeaderValue::from_static("*/*"));
-        headers.insert("Authorization", HeaderValue::from_str(format!("BEARER {}", token)
-            .as_str()).unwrap_or(HeaderValue::from_static("*/*")));
+        headers.insert(
+            "Authorization",
+            HeaderValue::from_str(format!("BEARER {}", token).as_str())
+                .unwrap_or(HeaderValue::from_static("*/*")),
+        );
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
         Self {
@@ -48,14 +50,26 @@ impl OpenAPIClient {
             client: reqwest::ClientBuilder::new()
                 .default_headers(headers)
                 .build()
-                .unwrap_or_default()
+                .unwrap_or_default(),
         }
     }
 
-    async fn get<'a, T: OpenAPIRequest>(&self, request: T) -> Result<T::ResponseType<'a>, reqwest::Error>
-        where for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de> {
+    async fn get<'a, T: OpenAPIRequest>(
+        &self,
+        request: T,
+    ) -> Result<T::ResponseType<'a>, reqwest::Error>
+    where
+        for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de>,
+    {
         let env = String::from(self.environment);
-        let body = self.client.get(format!("https://gateway.saxobank.com/{}/openapi/{}{}", env, T::path(), request.id())) // TODO: Create builder?
+        let body = self
+            .client
+            .get(format!(
+                "https://gateway.saxobank.com/{}/openapi/{}{}",
+                env,
+                T::path(),
+                request.id()
+            )) // TODO: Create builder?
             .send()
             .await?
             .json::<T::ResponseType<'a>>()

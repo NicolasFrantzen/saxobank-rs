@@ -1,12 +1,10 @@
-
-use  saxobank_rs::client::OpenAPIClient;
+use saxobank_rs::client::OpenAPIClient;
 
 const TOKEN: &str = "";
 
 #[ignore]
 #[tokio::test]
-async fn test_get_user_info()
-{
+async fn test_get_user_info() {
     let client = OpenAPIClient::new_sim(TOKEN);
 
     let body = client.get_user_info().await;
@@ -19,8 +17,7 @@ async fn test_get_user_info()
 
 #[ignore]
 #[tokio::test]
-async fn test_get_client_info()
-{
+async fn test_get_client_info() {
     let client = OpenAPIClient::new_sim(TOKEN);
 
     let body = client.get_client_info().await;
@@ -30,4 +27,3 @@ async fn test_get_client_info()
 
     assert!(body.is_ok());
 }
-
