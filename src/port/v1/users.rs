@@ -25,7 +25,7 @@ impl OpenAPIRequest for Request {
     type ResponseType<'a> = Response<'a>;
 
     fn id(&self) -> &str {
-        &self.0
+        self.0
     }
 
     fn path() -> &'static str {

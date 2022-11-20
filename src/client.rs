@@ -79,11 +79,11 @@ impl OpenAPIClient {
     }
 
     pub async fn get_user_info<'a>(&self) -> Result<port::v1::users::Response, reqwest::Error> {
-        Ok(self.get(port::v1::users::Request("me")).await?)
+        self.get(port::v1::users::Request("me")).await
     }
 
     pub async fn get_client_info<'a>(&self) -> Result<port::v1::clients::Response, reqwest::Error> {
-        Ok(self.get(port::v1::clients::Request("me")).await?)
+        self.get(port::v1::clients::Request("me")).await
     }
 }
 
