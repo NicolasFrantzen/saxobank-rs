@@ -1,8 +1,10 @@
 #![allow(non_snake_case)]
-use crate::OpenAPIResponse;
+use crate::OpenAPIRequest;
 
 use serde::Deserialize;
 use std::borrow::Cow;
+
+pub struct Request(pub &'static str);
 
 #[derive(Deserialize, Debug, Default)]
 pub struct Response<'a> {
@@ -19,8 +21,14 @@ pub struct Response<'a> {
     UserKey: Cow<'a, str>,
 }
 
-impl<'a> OpenAPIResponse for Response<'a> {
-    fn path() -> String {
-        String::from("port/v1/users/")
+impl OpenAPIRequest for Request {
+    type ResponseType<'a> = Response<'a>;
+
+    fn id(&self) -> &str {
+        &self.0
+    }
+
+    fn path() -> &'static str {
+        "port/v1/users/"
     }
 }

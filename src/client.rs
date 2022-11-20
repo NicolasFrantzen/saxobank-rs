@@ -1,5 +1,5 @@
 use crate::port;
-use crate::OpenAPIResponse;
+use crate::OpenAPIRequest;
 
 use reqwest::header::{HeaderValue, HeaderMap};
 use serde::Deserialize;
@@ -52,23 +52,24 @@ impl OpenAPIClient {
         }
     }
 
-    async fn get<T: OpenAPIResponse + for<'a> Deserialize<'a>>(&self, id: &str) -> Result<T, reqwest::Error> {
+    async fn get<'a, T: OpenAPIRequest>(&self, request: T) -> Result<T::ResponseType<'a>, reqwest::Error>
+        where for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de> {
         let env = String::from(self.environment);
-        let body = self.client.get(format!("https://gateway.saxobank.com/{}/openapi/{}{}", env, T::path(), id)) // TODO: Create builder?
+        let body = self.client.get(format!("https://gateway.saxobank.com/{}/openapi/{}{}", env, T::path(), request.id())) // TODO: Create builder?
             .send()
             .await?
-            .json::<T>()
+            .json::<T::ResponseType<'a>>()
             .await?;
 
         Ok(body)
     }
 
     pub async fn get_user_info<'a>(&self) -> Result<port::v1::users::Response, reqwest::Error> {
-        Ok(self.get::<port::v1::users::Response>("me").await?)
+        Ok(self.get(port::v1::users::Request("me")).await?)
     }
 
     pub async fn get_client_info<'a>(&self) -> Result<port::v1::clients::Response, reqwest::Error> {
-        Ok(self.get::<port::v1::clients::Response>("me").await?)
+        Ok(self.get(port::v1::clients::Request("me")).await?)
     }
 }
 

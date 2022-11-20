@@ -4,6 +4,9 @@ pub mod port;
 pub mod client;
 
 
-pub(crate) trait OpenAPIResponse {
-    fn path() -> String;
+pub(crate) trait OpenAPIRequest {
+    type ResponseType<'a>;
+
+    fn id(&self) -> &str;
+    fn path() -> &'static str;
 }
