@@ -62,16 +62,21 @@ impl OpenAPIClient {
         for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de>,
     {
         let env = String::from(self.environment);
-        let body = self
+        let response = self
             .client
             .get(format!(
                 "https://gateway.saxobank.com/{}/openapi/{}{}",
                 env,
                 T::path(),
                 request.id()
-            )) // TODO: Create builder?
+            ))
             .send()
-            .await?
+            .await?;
+
+        dbg!(&response);
+
+        let body = response
+            .error_for_status()?
             .json::<T::ResponseType<'a>>()
             .await?;
 

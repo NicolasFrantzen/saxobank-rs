@@ -6,21 +6,6 @@ use std::borrow::Cow;
 
 pub struct Request(pub &'static str);
 
-#[derive(Deserialize, Debug, Default)]
-pub struct Response<'a> {
-    ClientKey: Cow<'a, str>,
-    Culture: Cow<'a, str>,
-    Language: Cow<'a, str>,
-    LastLoginStatus: Cow<'a, str>,
-    LastLoginTime: Cow<'a, str>,
-    LegalAssetTypes: Vec<Cow<'a, str>>,
-    MarketDataViaOpenApiTermsAccepted: bool,
-    Name: Cow<'a, str>,
-    TimeZoneId: i32,
-    UserId: Cow<'a, str>,
-    UserKey: Cow<'a, str>,
-}
-
 impl OpenAPIRequest for Request {
     type ResponseType<'a> = Response<'a>;
 
@@ -31,4 +16,19 @@ impl OpenAPIRequest for Request {
     fn path() -> &'static str {
         "port/v1/users/"
     }
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct Response<'a> {
+    ClientKey: Option<Cow<'a, str>>,
+    Culture: Option<Cow<'a, str>>,
+    Language: Option<Cow<'a, str>>,
+    LastLoginStatus: Option<Cow<'a, str>>,
+    LastLoginTime: Option<Cow<'a, str>>,
+    LegalAssetTypes: Option<Vec<Cow<'a, str>>>,
+    MarketDataViaOpenApiTermsAccepted: Option<bool>,
+    Name: Option<Cow<'a, str>>,
+    TimeZoneId: Option<i32>,
+    UserId: Option<Cow<'a, str>>,
+    UserKey: Option<Cow<'a, str>>,
 }
