@@ -1,7 +1,7 @@
 use crate::error::OpenAPIBadRequest;
+use crate::error::OpenAPIError;
 use crate::port;
 use crate::OpenAPIRequest;
-use crate::error::OpenAPIError;
 
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde::Deserialize;
@@ -79,30 +79,23 @@ impl OpenAPIClient {
         Self::parse_response::<T>(response).await
     }
 
-    async fn parse_response<'a, T: OpenAPIRequest>(response: reqwest::Response) -> Result<T::ResponseType<'a>, OpenAPIError>
+    async fn parse_response<'a, T: OpenAPIRequest>(
+        response: reqwest::Response,
+    ) -> Result<T::ResponseType<'a>, OpenAPIError>
     where
-        for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de> {
+        for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de>,
+    {
         match response.status() {
             // Bad request contains a body that needs to be serialized
-            reqwest::StatusCode::BAD_REQUEST => {
-                Err(
-                    OpenAPIError::BadRequest(
-                        response
-                        .json::<OpenAPIBadRequest>()
-                        .await?
-                    )
-                )
-            },
+            reqwest::StatusCode::BAD_REQUEST => Err(OpenAPIError::BadRequest(
+                response.json::<OpenAPIBadRequest>().await?,
+            )),
             // If the error code is > 400 return an OpenAPIError
             // Otherwise continue deserialization
-            _ => {
-                Ok(
-                    response
-                    .error_for_status()?
-                    .json::<T::ResponseType<'a>>()
-                    .await?
-                )
-            }
+            _ => Ok(response
+                .error_for_status()?
+                .json::<T::ResponseType<'a>>()
+                .await?),
         }
     }
 

@@ -9,7 +9,7 @@ pub enum OpenAPIError {
     BadRequest(OpenAPIBadRequest),
 }
 
-impl Error for OpenAPIError { }
+impl Error for OpenAPIError {}
 
 impl fmt::Display for OpenAPIError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
