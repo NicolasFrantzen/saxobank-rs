@@ -1,5 +1,7 @@
+use crate::error::OpenAPIBadRequest;
 use crate::port;
 use crate::OpenAPIRequest;
+use crate::error::OpenAPIError;
 
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde::Deserialize;
@@ -36,7 +38,7 @@ impl OpenAPIClient {
     }
 
     fn new(environment: Env, token: &str) -> Self {
-        let mut headers = HeaderMap::new();
+        let mut headers = HeaderMap::new(); // TODO: Create header builder
         headers.insert("Accept", HeaderValue::from_static("*/*"));
         headers.insert(
             "Authorization",
@@ -57,7 +59,7 @@ impl OpenAPIClient {
     async fn get<'a, T: OpenAPIRequest>(
         &self,
         request: T,
-    ) -> Result<T::ResponseType<'a>, reqwest::Error>
+    ) -> Result<T::ResponseType<'a>, OpenAPIError>
     where
         for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de>,
     {
@@ -65,7 +67,7 @@ impl OpenAPIClient {
         let response = self
             .client
             .get(format!(
-                "https://gateway.saxobank.com/{}/openapi/{}{}",
+                "https://gateway.saxobank.com/{}/openapi/{}{}", // TODO: make configurable
                 env,
                 T::path(),
                 request.id()
@@ -74,20 +76,41 @@ impl OpenAPIClient {
             .await?;
 
         dbg!(&response);
-
-        let body = response
-            .error_for_status()?
-            .json::<T::ResponseType<'a>>()
-            .await?;
-
-        Ok(body)
+        Self::parse_response::<T>(response).await
     }
 
-    pub async fn get_user_info<'a>(&self) -> Result<port::v1::users::Response, reqwest::Error> {
+    async fn parse_response<'a, T: OpenAPIRequest>(response: reqwest::Response) -> Result<T::ResponseType<'a>, OpenAPIError>
+    where
+        for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de> {
+        match response.status() {
+            // Bad request contains a body that needs to be serialized
+            reqwest::StatusCode::BAD_REQUEST => {
+                Err(
+                    OpenAPIError::BadRequest(
+                        response
+                        .json::<OpenAPIBadRequest>()
+                        .await?
+                    )
+                )
+            },
+            // If the error code is > 400 return an OpenAPIError
+            // Otherwise continue deserialization
+            _ => {
+                Ok(
+                    response
+                    .error_for_status()?
+                    .json::<T::ResponseType<'a>>()
+                    .await?
+                )
+            }
+        }
+    }
+
+    pub async fn get_user_info<'a>(&self) -> Result<port::v1::users::Response, OpenAPIError> {
         self.get(port::v1::users::Request("me")).await
     }
 
-    pub async fn get_client_info<'a>(&self) -> Result<port::v1::clients::Response, reqwest::Error> {
+    pub async fn get_client_info<'a>(&self) -> Result<port::v1::clients::Response, OpenAPIError> {
         self.get(port::v1::clients::Request("me")).await
     }
 }

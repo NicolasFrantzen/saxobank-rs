@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 use crate::OpenAPIRequest;
 
 use serde::Deserialize;
@@ -18,6 +17,7 @@ impl OpenAPIRequest for Request {
     }
 }
 
+#[allow(non_snake_case)]
 #[derive(Deserialize, Debug, Default)]
 pub struct Response<'a> {
     AccountValueProtectionLimit: Option<f32>,
