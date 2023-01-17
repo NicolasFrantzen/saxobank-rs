@@ -18,7 +18,7 @@ impl OpenAPIRequest for Request {
 }
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug, Default, PartialEq)]
 pub struct Response<'a> {
     ClientKey: Option<Cow<'a, str>>,
     Culture: Option<Cow<'a, str>>,

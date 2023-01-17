@@ -3,10 +3,14 @@ use crate::error::OpenAPIError;
 use crate::port;
 use crate::OpenAPIRequest;
 
+use async_trait::async_trait;
+use mockall::automock;
+use reqwest::Url;
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde::Deserialize;
 
 use std::borrow::Cow;
+use std::error::Error;
 
 #[derive(Clone, Copy)]
 enum Env {
@@ -17,27 +21,57 @@ enum Env {
 impl From<Env> for String {
     fn from(env: Env) -> Self {
         match env {
-            Env::Sim => "sim".to_owned(),
-            Env::Live => "live".to_owned(),
+            Env::Sim => String::from("sim"),
+            Env::Live => String::from("live"),
         }
     }
 }
 
-pub struct OpenAPIClient {
-    client: reqwest::Client,
-    environment: Env,
+#[automock]
+#[async_trait]
+pub trait HttpSend {
+    async fn send(&self, request: reqwest::RequestBuilder) -> Result<reqwest::Response, Box<dyn Error>>;
+ }
+
+
+pub struct Sender;
+
+ #[async_trait]
+impl HttpSend for Sender {
+   async fn send(&self, request: reqwest::RequestBuilder)
+      -> Result<reqwest::Response, Box<dyn Error>>
+   {
+      Ok(request.send().await?)
+   }
 }
 
-impl OpenAPIClient {
-    pub fn new_sim(token: &str) -> Self {
-        Self::new(Env::Sim, token)
-    }
+pub struct OpenAPIClient<S: HttpSend=Sender> {
+    client: reqwest::Client,
+    sender: S,
+    env: Env,
+}
 
-    pub fn new_live(token: &str) -> Self {
-        Self::new(Env::Live, token)
+impl OpenAPIClient<Sender> {
+    pub fn new(token: &str) -> OpenAPIClient<Sender> {
+        OpenAPIClient {
+          client: Self::build_client(token),
+          sender: Sender,
+          env: Env::Sim,
+       }
     }
+ }
 
-    fn new(environment: Env, token: &str) -> Self {
+impl<S: HttpSend> OpenAPIClient<S> {
+    pub fn sim_with_sender(sender: S, token: &str) -> OpenAPIClient<S> {
+        OpenAPIClient {
+           client: Self::build_client(token),
+           sender,
+           env: Env::Sim,
+        }
+     }
+
+    fn build_client(token: &str) -> reqwest::Client
+    {
         let mut headers = HeaderMap::new(); // TODO: Create header builder
         headers.insert("Accept", HeaderValue::from_static("*/*"));
         headers.insert(
@@ -47,13 +81,10 @@ impl OpenAPIClient {
         );
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
-        Self {
-            environment,
-            client: reqwest::ClientBuilder::new()
+        reqwest::ClientBuilder::new()
                 .default_headers(headers)
                 .build()
-                .unwrap_or_default(),
-        }
+                .unwrap_or_default()
     }
 
     async fn get<'a, T: OpenAPIRequest>(
@@ -63,19 +94,22 @@ impl OpenAPIClient {
     where
         for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de>,
     {
-        let env = String::from(self.environment);
+        let env = String::from(self.env);
         let response = self
-            .client
-            .get(format!(
-                "https://gateway.saxobank.com/{}/openapi/{}{}", // TODO: make configurable
-                env,
-                T::path(),
-                request.id()
-            ))
-            .send()
+            .sender
+            .send(self.client
+                .get(format!(
+                    "https://gateway.saxobank.com/{}/openapi/{}{}", // TODO: make configurable and use .join instead
+                    env,
+                    T::path(),
+                    request.id()
+                ))
+            )
             .await?;
 
+        #[cfg(debug_assertions)]
         dbg!(&response);
+
         Self::parse_response::<T>(response).await
     }
 
@@ -112,9 +146,66 @@ impl OpenAPIClient {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_environment() {
-        assert_eq!(String::from(Env::Sim), "sim".to_owned());
-        assert_eq!(String::from(Env::Live), "live".to_owned());
+    use reqwest::Response;
+    use serde_json::json;
+
+    use std::{
+        cell::RefCell,
+        error::Error,
+    };
+
+    #[tokio::test]
+    async fn test_parse_ok() {
+        let mut mock_sender = MockHttpSend::new();
+        let client = OpenAPIClient::sim_with_sender(mock_sender, "");
+
+        let response = reqwest::Response::from(http::Response::builder().status(200).body("{}").unwrap());
+        let api_response = OpenAPIClient::<Sender>::parse_response::<port::v1::users::Request>(response).await;
+
+        #[cfg(debug_assertions)]
+        dbg!(&api_response);
+        assert!(api_response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_parse_err() {
+        let mut mock_sender = MockHttpSend::new();
+        let client = OpenAPIClient::sim_with_sender(mock_sender, "");
+
+        let status = 400;
+        let response_body = json!({
+            "ErrorCode": "InvalidRequest",
+            "Message": "Invalid request message",
+        });
+        let response = reqwest::Response::from(http::Response::builder().status(status).body(response_body.to_string()).unwrap());
+        let api_response = OpenAPIClient::<Sender>::parse_response::<port::v1::users::Request>(response).await;
+
+        #[cfg(debug_assertions)]
+        dbg!(&api_response);
+
+        assert!(api_response.is_err());
+
+        if let OpenAPIError::BadRequest(c) = api_response.unwrap_err() {
+            assert_eq!(c.error_code(), "InvalidRequest");
+            assert_eq!(c.message(), "Invalid request message");
+        }
+        else {
+            assert!(false);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_user_info() {
+        let mut mock_sender = MockHttpSend::new();
+
+        mock_sender.expect_send()
+            .once()
+            .returning(move |_| Ok(reqwest::Response::from(http::Response::builder().status(200).body("test").unwrap())));
+
+        let client = OpenAPIClient::sim_with_sender(mock_sender, "");
+
+        //assert_eq!(client.get_user_info().await.unwrap(), port::v1::users::Response{});
+        #[cfg(debug_assertions)]
+        dbg!(client.get_user_info().await);
     }
 }

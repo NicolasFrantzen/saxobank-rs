@@ -18,7 +18,7 @@ impl OpenAPIRequest for Request {
 }
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug, Default, PartialEq)]
 pub struct Response<'a> {
     AccountValueProtectionLimit: Option<f32>,
     AllowedNettingProfiles: Option<Vec<Cow<'a, str>>>,

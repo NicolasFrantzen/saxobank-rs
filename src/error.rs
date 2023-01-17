@@ -2,10 +2,11 @@ use std::error::Error;
 use std::fmt;
 
 use serde::Deserialize;
+use serde::ser::StdError;
 
 #[derive(Debug)]
 pub enum OpenAPIError {
-    HTTPError(reqwest::Error),
+    HTTPError(Box<dyn StdError>),
     BadRequest(OpenAPIBadRequest),
 }
 
@@ -25,6 +26,11 @@ pub struct OpenAPIBadRequest {
     //modelState: Option<String>, // TODO: fix to proper format
 }
 
+impl OpenAPIBadRequest {
+    pub fn error_code(&self) -> &str { &self.ErrorCode }
+    pub fn message(&self) -> &str { &self.Message }
+}
+
 impl fmt::Display for OpenAPIBadRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "OpenAPIBadRequest")
@@ -33,6 +39,12 @@ impl fmt::Display for OpenAPIBadRequest {
 
 impl From<reqwest::Error> for OpenAPIError {
     fn from(err: reqwest::Error) -> Self {
+        OpenAPIError::HTTPError(Box::new(err))
+    }
+}
+
+impl From<Box<dyn StdError>> for OpenAPIError {
+    fn from(err: Box<dyn StdError>) -> Self {
         OpenAPIError::HTTPError(err)
     }
 }
