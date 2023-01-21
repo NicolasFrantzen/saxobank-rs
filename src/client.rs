@@ -52,12 +52,22 @@ pub struct OpenAPIClient<S: HttpSend=Sender> {
 }
 
 impl OpenAPIClient<Sender> {
-    pub fn new(token: &str) -> OpenAPIClient<Sender> {
+    fn new(token: &str, env: Env) -> Self {
         OpenAPIClient {
           client: Self::build_client(token),
           sender: Sender,
-          env: Env::Sim,
+          env,
        }
+    }
+
+    pub fn new_sim(token: &str) -> Self
+    {
+        Self::new(token, Env::Sim)
+    }
+
+    pub fn new_live(token: &str) -> Self
+    {
+        Self::new(token, Env::Live)
     }
  }
 
