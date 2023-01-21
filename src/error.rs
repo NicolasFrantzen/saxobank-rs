@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::fmt;
 
-use serde::Deserialize;
 use serde::ser::StdError;
+use serde::Deserialize;
 
 #[derive(Debug)]
 pub enum OpenAPIError {
@@ -27,8 +27,12 @@ pub struct OpenAPIBadRequest {
 }
 
 impl OpenAPIBadRequest {
-    pub fn error_code(&self) -> &str { &self.ErrorCode }
-    pub fn message(&self) -> &str { &self.Message }
+    pub fn error_code(&self) -> &str {
+        &self.ErrorCode
+    }
+    pub fn message(&self) -> &str {
+        &self.Message
+    }
 }
 
 impl fmt::Display for OpenAPIBadRequest {
