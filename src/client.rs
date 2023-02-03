@@ -132,8 +132,10 @@ impl<S: HttpSend> OpenAPIClient<S> {
             reqwest::StatusCode::BAD_REQUEST => Err(OpenAPIError::BadRequest(
                 response.json::<OpenAPIBadRequest>().await?,
             )),
-            // If the error code is > 400 return an OpenAPIError
+            reqwest::StatusCode::UNAUTHORIZED => Err(OpenAPIError::Unauthorized),
+
             // Otherwise continue deserialization
+            // If error > 401 return deserialized HTTP error
             _ => Ok(response
                 .error_for_status()?
                 .json::<T::ResponseType<'a>>()
@@ -212,14 +214,21 @@ mod tests {
 
         mock_sender.expect_send().once().returning(move |_| {
             Ok(reqwest::Response::from(
-                http::Response::builder().status(200).body("test").unwrap(),
+                http::Response::builder().status(200).body(json!({
+                    "Name": "Foo",
+                    "UserId": "Bar",
+                    "Language": "C++",
+                }).to_string()).unwrap(),
             ))
         });
 
         let client = OpenAPIClient::sim_with_sender(mock_sender, "");
 
-        //assert_eq!(client.get_user_info().await.unwrap(), port::v1::users::Response{});
-        #[cfg(debug_assertions)]
-        dbg!(client.get_user_info().await);
+        // Check that the values came out properly
+        let resp = client.get_user_info().await.unwrap();
+
+        assert_eq!(resp.Name.unwrap().as_ref(), "Foo");
+        assert_eq!(resp.UserId.unwrap().as_ref(), "Bar");
+        assert_eq!(resp.Language.unwrap().as_ref(), "C++");
     }
 }

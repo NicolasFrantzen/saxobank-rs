@@ -7,6 +7,7 @@ use serde::Deserialize;
 #[derive(Debug)]
 pub enum OpenAPIError {
     HTTPError(Box<dyn StdError>),
+    Unauthorized,
     BadRequest(OpenAPIBadRequest),
 }
 
@@ -15,6 +16,18 @@ impl Error for OpenAPIError {}
 impl fmt::Display for OpenAPIError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "OpenAPIError")
+    }
+}
+
+impl From<reqwest::Error> for OpenAPIError {
+    fn from(err: reqwest::Error) -> Self {
+        OpenAPIError::HTTPError(Box::new(err))
+    }
+}
+
+impl From<Box<dyn StdError>> for OpenAPIError {
+    fn from(err: Box<dyn StdError>) -> Self {
+        OpenAPIError::HTTPError(err)
     }
 }
 
@@ -38,18 +51,6 @@ impl OpenAPIBadRequest {
 impl fmt::Display for OpenAPIBadRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "OpenAPIBadRequest")
-    }
-}
-
-impl From<reqwest::Error> for OpenAPIError {
-    fn from(err: reqwest::Error) -> Self {
-        OpenAPIError::HTTPError(Box::new(err))
-    }
-}
-
-impl From<Box<dyn StdError>> for OpenAPIError {
-    fn from(err: Box<dyn StdError>) -> Self {
-        OpenAPIError::HTTPError(err)
     }
 }
 
