@@ -2,7 +2,7 @@
 
 pub mod client;
 pub mod error;
-pub mod port;
+pub mod messages;
 
 pub(crate) trait OpenAPIRequest {
     type ResponseType<'a>;
