@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 use serde::ser::StdError;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug)]
 pub enum OpenAPIError {
@@ -15,6 +15,7 @@ impl Error for OpenAPIError {}
 
 impl fmt::Display for OpenAPIError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO
         write!(f, "OpenAPIError")
     }
 }
@@ -32,15 +33,15 @@ impl From<Box<dyn StdError>> for OpenAPIError {
 }
 
 #[allow(non_snake_case)]
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 pub struct OpenAPIBadRequest {
-    ErrorCode: String,
+    ErrorCode: ErrorCode,
     Message: String,
     //modelState: Option<String>, // TODO: fix to proper format
 }
 
 impl OpenAPIBadRequest {
-    pub fn error_code(&self) -> &str {
+    pub fn error_code(&self) -> &ErrorCode {
         &self.ErrorCode
     }
     pub fn message(&self) -> &str {
@@ -55,7 +56,7 @@ impl fmt::Display for OpenAPIBadRequest {
 }
 
 // TODO: Parse the errorCode
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq)]
 pub enum ErrorCode {
     /// Default error code returned when it cannot be determined which part of the request is malformed.
     InvalidRequest,
@@ -87,4 +88,59 @@ pub enum ErrorCode {
     RequestNotAllowed,
     /// Error code returned when domain validation fails.
     DomainValidationError,
+}
+
+impl Serialize for ErrorCode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        serializer.serialize_str(match *self {
+            ErrorCode::InvalidRequest => "InvalidRequest",
+            _ => todo!(),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for ErrorCode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(match s.as_str() {
+            "InvalidRequest" => ErrorCode::InvalidRequest,
+            &_ => todo!()
+        })
+    }
+}
+
+impl Default for ErrorCode {
+    fn default() -> Self {
+        ErrorCode::InvalidRequest
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use serde_test::{Token, assert_tokens};
+
+    #[test]
+    fn test_bad_request()
+    {
+        let bad_request = OpenAPIBadRequest {
+            ErrorCode: ErrorCode::InvalidRequest,
+            Message: "foo".to_string(),
+        };
+
+        assert_tokens(&bad_request, &[
+            Token::Struct{ name: "OpenAPIBadRequest", len: 2 },
+            Token::Str("ErrorCode"),
+            Token::Str("InvalidRequest"),
+            Token::Str("Message"),
+            Token::Str("foo"),
+            Token::StructEnd,
+        ]);
+    }
+
 }

@@ -1,5 +1,4 @@
-use crate::error::OpenAPIBadRequest;
-use crate::error::OpenAPIError;
+use crate::error::{OpenAPIBadRequest, OpenAPIError, ErrorCode};
 use crate::messages::port;
 use crate::OpenAPIRequest;
 
@@ -201,7 +200,7 @@ mod tests {
         assert!(api_response.is_err());
 
         if let OpenAPIError::BadRequest(c) = api_response.unwrap_err() {
-            assert_eq!(c.error_code(), "InvalidRequest");
+            assert_eq!(c.error_code(), &ErrorCode::InvalidRequest);
             assert_eq!(c.message(), "Invalid request message");
         } else {
             assert!(false);
