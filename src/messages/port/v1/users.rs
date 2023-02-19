@@ -1,7 +1,8 @@
-use crate::OpenAPIRequest;
+use crate::{OpenAPIRequest, OpenAPIResponse};
 
 use serde::Deserialize;
 use std::borrow::Cow;
+use std::fmt;
 
 pub struct Request(pub &'static str);
 
@@ -32,3 +33,11 @@ pub struct Response<'a> {
     pub UserId: Option<Cow<'a, str>>,
     pub UserKey: Option<Cow<'a, str>>,
 }
+
+impl<'a> fmt::Display for Response<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "OpenAPIRequest: Get user info")
+    }
+}
+
+impl<'a> OpenAPIResponse for Response<'a> { }

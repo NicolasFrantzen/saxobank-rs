@@ -1,7 +1,8 @@
-use crate::OpenAPIRequest;
+use crate::{OpenAPIRequest, OpenAPIResponse};
 
 use serde::Deserialize;
 use std::borrow::Cow;
+use std::fmt;
 
 pub struct Request(pub &'static str);
 
@@ -45,3 +46,11 @@ pub struct Response<'a> {
     ReduceExposureOnly: Option<bool>,
     SupportsAccountValueProtectionLimit: Option<bool>,
 }
+
+impl<'a> fmt::Display for Response<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "OpenAPIRequest: Get clients info")
+    }
+}
+
+impl<'a> OpenAPIResponse for Response<'a> { }
