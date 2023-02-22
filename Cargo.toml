@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.60"
+clap = { version = "4.1.6", features = ["cargo"] }
 http = "0.2.8"
 mockall = "0.11.3"
 reqwest = { version = "0.11.13", features = ["json"] }
