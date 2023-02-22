@@ -157,14 +157,14 @@ mod tests {
     fn test_serde_bad_request()
     {
         let bad_request = OpenAPIBadRequest {
-            ErrorCode: ErrorCode::InvalidRequest,
+            ErrorCode: ErrorCode::InvalidRequestHeader,
             Message: "foo".to_string(),
         };
 
         assert_tokens(&bad_request, &[
             Token::Struct{ name: "OpenAPIBadRequest", len: 2 },
             Token::Str("ErrorCode"),
-            Token::Str("InvalidRequest"),
+            Token::Str("InvalidRequestHeader"),
             Token::Str("Message"),
             Token::Str("foo"),
             Token::StructEnd,

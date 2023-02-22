@@ -176,7 +176,24 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_parse_err() {
+    async fn test_parse_unauthorized() {
+        let mut mock_sender = MockHttpSend::new();
+        let client = OpenAPIClient::sim_with_sender(mock_sender, "");
+
+        let response =
+            reqwest::Response::from(http::Response::builder().status(401).body("{}").unwrap());
+        let api_response =
+            OpenAPIClient::<Sender>::parse_response::<port::v1::users::Request>(response).await;
+
+        #[cfg(debug_assertions)]
+        dbg!(&api_response);
+        assert!(api_response.is_err());
+
+        assert!(matches!(api_response.unwrap_err(), OpenAPIError::Unauthorized));
+    }
+
+    #[tokio::test]
+    async fn test_parse_bad_request() {
         let mut mock_sender = MockHttpSend::new();
         let client = OpenAPIClient::sim_with_sender(mock_sender, "");
 
