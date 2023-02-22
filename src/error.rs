@@ -1,7 +1,8 @@
-use std::error::Error;
+use std::error;
 use std::fmt;
 
 use serde::ser::StdError;
+use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug)]
@@ -11,7 +12,7 @@ pub enum OpenAPIError {
     BadRequest(OpenAPIBadRequest),
 }
 
-impl Error for OpenAPIError {}
+impl error::Error for OpenAPIError {}
 
 impl fmt::Display for OpenAPIError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -96,7 +97,19 @@ impl Serialize for ErrorCode {
     {
         serializer.serialize_str(match *self {
             ErrorCode::InvalidRequest => "InvalidRequest",
-            _ => todo!(),
+            ErrorCode::InvalidRequestHeader => "InvalidRequestHeader",
+            ErrorCode::InvalidMediaTypeHeader => "InvalidMediaTypeHeader",
+            ErrorCode::InvalidAcceptLanguageHeader => "InvalidAcceptLanguageHeader",
+            ErrorCode::InvalidQueryParameters => "InvalidQueryParameters",
+            ErrorCode::InvalidModelState => "InvalidModelState",
+            ErrorCode::TypeConversionError => "TypeConversionError",
+            ErrorCode::SubscriptionLimitExceeded => "SubscriptionLimitExceeded",
+            ErrorCode::RateLimitExceeded => "RateLimitExceeded",
+            ErrorCode::FeatureNotEnabled => "FeatureNotEnabled",
+            ErrorCode::InternalTimeout => "InternalTimeout",
+            ErrorCode::UnsupportedSubscriptionFormat => "UnsupportedSubscriptionFormat",
+            ErrorCode::RequestNotAllowed => "RequestNotAllowed",
+            ErrorCode::DomainValidationError => "DomainValidationError",
         })
     }
 }
@@ -108,7 +121,22 @@ impl<'de> Deserialize<'de> for ErrorCode {
         let s = String::deserialize(deserializer)?;
         Ok(match s.as_str() {
             "InvalidRequest" => ErrorCode::InvalidRequest,
-            &_ => todo!()
+            "InvalidRequestHeader" => ErrorCode::InvalidRequestHeader,
+            "InvalidMediaTypeHeader" => ErrorCode::InvalidMediaTypeHeader,
+            "InvalidAcceptLanguageHeader" => ErrorCode::InvalidAcceptLanguageHeader,
+            "InvalidQueryParameters" => ErrorCode::InvalidQueryParameters,
+            "InvalidModelState" => ErrorCode::InvalidModelState,
+            "TypeConversionError" => ErrorCode::TypeConversionError,
+            "SubscriptionLimitExceeded" => ErrorCode::SubscriptionLimitExceeded,
+            "RateLimitExceeded" => ErrorCode::RateLimitExceeded,
+            "FeatureNotEnabled" => ErrorCode::FeatureNotEnabled,
+            "InternalTimeout" => ErrorCode::InternalTimeout,
+            "UnsupportedSubscriptionFormat" => ErrorCode::UnsupportedSubscriptionFormat,
+            "RequestNotAllowed" => ErrorCode::RequestNotAllowed,
+            "DomainValidationError" => ErrorCode::DomainValidationError,
+            &_ => {
+                return Err(D::Error::custom("Unknown ErrorCode!"))
+            }
         })
     }
 }
@@ -123,10 +151,10 @@ impl Default for ErrorCode {
 mod tests {
     use super::*;
 
-    use serde_test::{Token, assert_tokens};
+    use serde_test::{Token, assert_tokens, assert_de_tokens_error};
 
     #[test]
-    fn test_bad_request()
+    fn test_serde_bad_request()
     {
         let bad_request = OpenAPIBadRequest {
             ErrorCode: ErrorCode::InvalidRequest,
@@ -141,6 +169,18 @@ mod tests {
             Token::Str("foo"),
             Token::StructEnd,
         ]);
+    }
+
+    #[test]
+    fn test_serde_error_code_unknown()
+    {
+        assert_de_tokens_error::<ErrorCode>(
+            &[
+                Token::Str("ErrorCode"),
+                Token::Str("Foo"),
+            ],
+            "Unknown ErrorCode!",
+        );
     }
 
 }
