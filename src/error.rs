@@ -1,9 +1,11 @@
 use std::error;
 use std::fmt;
+use std::collections::HashMap;
 
 use serde::ser::StdError;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Map;
 
 #[derive(Debug)]
 pub enum OpenAPIError {
@@ -33,12 +35,14 @@ impl From<Box<dyn StdError>> for OpenAPIError {
     }
 }
 
+type ModelStateType = HashMap<String, Vec<String>>;
+
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 pub struct OpenAPIBadRequest {
     ErrorCode: ErrorCode,
     Message: String,
-    //modelState: Option<String>, // TODO: fix to proper format
+    ModelState: Option<ModelStateType>,
 }
 
 impl OpenAPIBadRequest {
@@ -56,7 +60,7 @@ impl fmt::Display for OpenAPIBadRequest {
     }
 }
 
-// TODO: Parse the errorCode
+/// Generic and domain specific error codes
 #[derive(Debug, PartialEq)]
 pub enum ErrorCode {
     /// Default error code returned when it cannot be determined which part of the request is malformed.
@@ -151,6 +155,7 @@ impl Default for ErrorCode {
 mod tests {
     use super::*;
 
+    use serde_json::json;
     use serde_test::{Token, assert_tokens, assert_de_tokens_error};
 
     #[test]
@@ -159,14 +164,48 @@ mod tests {
         let bad_request = OpenAPIBadRequest {
             ErrorCode: ErrorCode::InvalidRequestHeader,
             Message: "foo".to_string(),
+            ModelState: None,
         };
 
         assert_tokens(&bad_request, &[
-            Token::Struct{ name: "OpenAPIBadRequest", len: 2 },
+            Token::Struct{ name: "OpenAPIBadRequest", len: 3 },
             Token::Str("ErrorCode"),
             Token::Str("InvalidRequestHeader"),
             Token::Str("Message"),
             Token::Str("foo"),
+            Token::Str("ModelState"),
+            Token::None,
+            Token::StructEnd,
+        ]);
+    }
+
+    #[test]
+    fn test_serde_bad_request_modal_state()
+    {
+        let model_state = HashMap::from([
+            ("$skip".to_owned(), vec!["Invalid $skip query parameter value: 2s".to_owned()])
+        ]);
+
+        let bad_request = OpenAPIBadRequest {
+            ErrorCode: ErrorCode::InvalidRequestHeader,
+            Message: "foo".to_string(),
+            ModelState: Some(model_state),
+        };
+
+        assert_tokens(&bad_request, &[
+            Token::Struct{ name: "OpenAPIBadRequest", len: 3 },
+            Token::Str("ErrorCode"),
+            Token::Str("InvalidRequestHeader"),
+            Token::Str("Message"),
+            Token::Str("foo"),
+            Token::Str("ModelState"),
+            Token::Some,
+            Token::Map { len: Some(1), },
+            Token::Str("$skip"),
+            Token::Seq { len: Some(1), },
+            Token::Str("Invalid $skip query parameter value: 2s"),
+            Token::SeqEnd,
+            Token::MapEnd,
             Token::StructEnd,
         ]);
     }
@@ -181,6 +220,25 @@ mod tests {
             ],
             "Unknown ErrorCode!",
         );
+    }
+
+    /// Test that the format sampled in
+    /// https://www.developer.saxo/openapi/learn/openapi-request-response
+    /// Indeed can be deserialized, with our struct.
+    #[test]
+    fn test_serde_model_state()
+    {
+        let bad_request = json!({
+            "ErrorCode":"InvalidModelState",
+            "Message":"One or more properties of the request are invalid!",
+            "ModelState":
+             {
+               "$skip":["Invalid $skip query parameter value: 2s"]
+             },
+        });
+
+        println!("{:?}", bad_request);
+        let _bad_request_deserialized: OpenAPIBadRequest = serde_json::from_str(&bad_request.to_string()).unwrap();
     }
 
 }
