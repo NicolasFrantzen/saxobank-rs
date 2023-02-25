@@ -18,33 +18,33 @@ impl OpenAPIRequest for Request {
     }
 }
 
-#[allow(non_snake_case)]
 #[derive(Deserialize, Debug, Default, PartialEq)]
+#[serde(rename_all = "PascalCase")]
 pub struct Response<'a> {
-    AccountValueProtectionLimit: Option<f32>,
-    AllowedNettingProfiles: Option<Vec<Cow<'a, str>>>,
-    AllowedTradingSessions: Option<Cow<'a, str>>,
-    ClientId: Option<Cow<'a, str>>,
-    ClientKey: Option<Cow<'a, str>>,
-    CurrencyDecimals: Option<u8>,
-    DefaultAccountId: Option<Cow<'a, str>>,
-    DefaultAccountKey: Option<Cow<'a, str>>,
-    DefaultCurrency: Option<Cow<'a, str>>,
-    ForceOpenDefaultValue: Option<bool>,
-    IsMarginTradingAllowed: Option<bool>,
-    IsVariationMarginEligible: Option<bool>,
-    LegalAssetTypes: Option<Vec<Cow<'a, str>>>,
-    LegalAssetTypesAreIndicative: Option<bool>,
-    MarginCalculationMethod: Option<Cow<'a, str>>,
-    MarginMonitoringMode: Option<Cow<'a, str>>,
-    MutualFundsCashAmountOrderCurrency: Option<Cow<'a, str>>,
-    Name: Option<Cow<'a, str>>,
-    PartnerPlatformId: Option<Cow<'a, str>>,
-    PositionNettingMethod: Option<Cow<'a, str>>,
-    PositionNettingMode: Option<Cow<'a, str>>,
-    PositionNettingProfile: Option<Cow<'a, str>>,
-    ReduceExposureOnly: Option<bool>,
-    SupportsAccountValueProtectionLimit: Option<bool>,
+    account_value_protection_limit: Option<f32>,
+    allowed_netting_profiles: Option<Vec<Cow<'a, str>>>,
+    allowed_trading_sessions: Option<Cow<'a, str>>,
+    client_id: Option<Cow<'a, str>>,
+    client_key: Option<Cow<'a, str>>,
+    currency_decimals: Option<u8>,
+    default_account_id: Option<Cow<'a, str>>,
+    default_account_key: Option<Cow<'a, str>>,
+    default_currency: Option<Cow<'a, str>>,
+    force_open_default_value: Option<bool>,
+    is_margin_trading_allowed: Option<bool>,
+    is_variation_margin_eligible: Option<bool>,
+    legal_asset_types: Option<Vec<Cow<'a, str>>>,
+    legal_asset_types_are_indicative: Option<bool>,
+    margin_calculation_method: Option<Cow<'a, str>>,
+    margin_monitoring_mode: Option<Cow<'a, str>>,
+    mutual_funds_cash_amount_order_currency: Option<Cow<'a, str>>,
+    name: Option<Cow<'a, str>>,
+    partner_platform_id: Option<Cow<'a, str>>,
+    position_netting_method: Option<Cow<'a, str>>,
+    position_netting_mode: Option<Cow<'a, str>>,
+    position_netting_profile: Option<Cow<'a, str>>,
+    reduce_exposure_only: Option<bool>,
+    supports_account_value_protection_limit: Option<bool>,
 }
 
 impl<'a> fmt::Display for Response<'a> {

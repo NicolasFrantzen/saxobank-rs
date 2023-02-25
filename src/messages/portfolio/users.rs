@@ -18,20 +18,20 @@ impl OpenAPIRequest for Request {
     }
 }
 
-#[allow(non_snake_case)]
 #[derive(Deserialize, Debug, Default, PartialEq)]
+#[serde(rename_all = "PascalCase")]
 pub struct Response<'a> {
-    pub ClientKey: Option<Cow<'a, str>>,
-    pub Culture: Option<Cow<'a, str>>,
-    pub Language: Option<Cow<'a, str>>,
-    pub LastLoginStatus: Option<Cow<'a, str>>,
-    pub LastLoginTime: Option<Cow<'a, str>>,
-    pub LegalAssetTypes: Option<Vec<Cow<'a, str>>>,
-    pub MarketDataViaOpenApiTermsAccepted: Option<bool>,
-    pub Name: Option<Cow<'a, str>>,
-    pub TimeZoneId: Option<i32>,
-    pub UserId: Option<Cow<'a, str>>,
-    pub UserKey: Option<Cow<'a, str>>,
+    pub client_key: Option<Cow<'a, str>>,
+    pub culture: Option<Cow<'a, str>>,
+    pub language: Option<Cow<'a, str>>,
+    pub last_login_status: Option<Cow<'a, str>>,
+    pub last_login_time: Option<Cow<'a, str>>,
+    pub legal_asset_types: Option<Vec<Cow<'a, str>>>,
+    pub market_data_via_open_api_terms_accepted: Option<bool>,
+    pub name: Option<Cow<'a, str>>,
+    pub time_zone_id: Option<i32>,
+    pub user_id: Option<Cow<'a, str>>,
+    pub user_key: Option<Cow<'a, str>>,
 }
 
 impl<'a> fmt::Display for Response<'a> {
