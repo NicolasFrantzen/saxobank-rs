@@ -1,5 +1,5 @@
 use crate::error::{OpenAPIBadRequest, OpenAPIError, ErrorCode};
-use crate::messages::port;
+use crate::messages::portfolio;
 use crate::OpenAPIRequest;
 
 use async_trait::async_trait;
@@ -142,12 +142,12 @@ impl<S: HttpSend> OpenAPIClient<S> {
         }
     }
 
-    pub async fn get_user_info<'a>(&self) -> Result<port::users::Response, OpenAPIError> {
-        self.get(port::users::Request("me")).await
+    pub async fn get_user_info<'a>(&self) -> Result<portfolio::users::Response, OpenAPIError> {
+        self.get(portfolio::users::Request("me")).await
     }
 
-    pub async fn get_client_info<'a>(&self) -> Result<port::clients::Response, OpenAPIError> {
-        self.get(port::clients::Request("me")).await
+    pub async fn get_client_info<'a>(&self) -> Result<portfolio::clients::Response, OpenAPIError> {
+        self.get(portfolio::clients::Request("me")).await
     }
 }
 
@@ -168,7 +168,7 @@ mod tests {
         let response =
             reqwest::Response::from(http::Response::builder().status(200).body("{}").unwrap());
         let api_response =
-            OpenAPIClient::<Sender>::parse_response::<port::users::Request>(response).await;
+            OpenAPIClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
 
         #[cfg(debug_assertions)]
         dbg!(&api_response);
@@ -183,7 +183,7 @@ mod tests {
         let response =
             reqwest::Response::from(http::Response::builder().status(401).body("{}").unwrap());
         let api_response =
-            OpenAPIClient::<Sender>::parse_response::<port::users::Request>(response).await;
+            OpenAPIClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
 
         #[cfg(debug_assertions)]
         dbg!(&api_response);
@@ -209,7 +209,7 @@ mod tests {
                 .unwrap(),
         );
         let api_response =
-            OpenAPIClient::<Sender>::parse_response::<port::users::Request>(response).await;
+            OpenAPIClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
 
         #[cfg(debug_assertions)]
         dbg!(&api_response);
