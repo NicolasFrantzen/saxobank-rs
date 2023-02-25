@@ -18,7 +18,7 @@ fn get_token() -> String
 async fn main() -> Result<(), Box<dyn Error>>
 {
     let client = OpenAPIClient::new_sim(&get_token());
-    println!("{:?}", client.get_port_user_info().await?);
+    println!("{:?}", client.get_ref_exchanges().await?);
 
     Ok(())
 }

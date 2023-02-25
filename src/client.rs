@@ -1,5 +1,5 @@
 use crate::error::{OpenAPIBadRequest, OpenAPIError, ErrorCode};
-use crate::messages::portfolio;
+use crate::messages::{portfolio, reference_data};
 use crate::OpenAPIRequest;
 
 use async_trait::async_trait;
@@ -142,12 +142,16 @@ impl<S: HttpSend> OpenAPIClient<S> {
         }
     }
 
-    pub async fn get_user_info<'a>(&self) -> Result<portfolio::users::Response, OpenAPIError> {
+    pub async fn get_port_user_info<'a>(&self) -> Result<portfolio::users::Response, OpenAPIError> {
         self.get(portfolio::users::Request("me")).await
     }
 
-    pub async fn get_client_info<'a>(&self) -> Result<portfolio::clients::Response, OpenAPIError> {
+    pub async fn get_port_client_info<'a>(&self) -> Result<portfolio::clients::Response, OpenAPIError> {
         self.get(portfolio::clients::Request("me")).await
+    }
+
+    pub async fn get_ref_exchanges<'a>(&self) -> Result<reference_data::exchanges::Response, OpenAPIError> {
+        self.get(reference_data::exchanges::Request("?$top=3&$skip=2")).await
     }
 }
 
@@ -225,7 +229,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_user_info() {
+    async fn test_get_port_user_info() {
         let mut mock_sender = MockHttpSend::new();
 
         mock_sender.expect_send().once().returning(move |_| {
@@ -241,10 +245,10 @@ mod tests {
         let client = OpenAPIClient::sim_with_sender(mock_sender, "");
 
         // Check that the values came out properly
-        let resp = client.get_user_info().await.unwrap();
+        let resp = client.get_port_user_info().await.unwrap();
 
-        assert_eq!(resp.Name.unwrap().as_ref(), "Foo");
-        assert_eq!(resp.UserId.unwrap().as_ref(), "Bar");
-        assert_eq!(resp.Language.unwrap().as_ref(), "C++");
+        assert_eq!(resp.name.unwrap().as_ref(), "Foo");
+        assert_eq!(resp.user_id.unwrap().as_ref(), "Bar");
+        assert_eq!(resp.language.unwrap().as_ref(), "C++");
     }
 }
