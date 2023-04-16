@@ -1,4 +1,4 @@
-use crate::{OpenAPIRequest, OpenAPIResponse};
+use crate::{SaxoRequest, SaxoResponse};
 
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -6,7 +6,7 @@ use std::fmt;
 
 pub struct Request(pub &'static str);
 
-impl OpenAPIRequest for Request {
+impl SaxoRequest for Request {
     type ResponseType = Response;
 
     fn id(&self) -> &str {
@@ -44,7 +44,7 @@ impl fmt::Display for Response {
     }
 }
 
-impl OpenAPIResponse for Response { }
+impl SaxoResponse for Response { }
 
 
 #[allow(non_snake_case)]

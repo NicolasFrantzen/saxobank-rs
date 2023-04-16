@@ -1,6 +1,6 @@
 use crate::error::{OpenAPIBadRequest, OpenAPIError, ErrorCode};
 use crate::messages::{portfolio, reference_data};
-use crate::OpenAPIRequest;
+use crate::SaxoRequest;
 
 use async_trait::async_trait;
 use mockall::automock;
@@ -97,12 +97,12 @@ impl<S: HttpSend> OpenAPIClient<S> {
             .unwrap_or_default()
     }
 
-    async fn get<T: OpenAPIRequest>(
+    async fn get<T: SaxoRequest>(
         &self,
         request: T,
     ) -> Result<T::ResponseType, OpenAPIError>
     where
-        <T as OpenAPIRequest>::ResponseType: DeserializeOwned
+        <T as SaxoRequest>::ResponseType: DeserializeOwned
     {
         let env = String::from(self.env);
         let response = self
@@ -121,11 +121,11 @@ impl<S: HttpSend> OpenAPIClient<S> {
         Self::parse_response::<T>(response).await
     }
 
-    async fn parse_response<T: OpenAPIRequest>(
+    async fn parse_response<T: SaxoRequest>(
         response: reqwest::Response,
     ) -> Result<T::ResponseType, OpenAPIError>
     where
-        <T as OpenAPIRequest>::ResponseType: DeserializeOwned,
+        <T as SaxoRequest>::ResponseType: DeserializeOwned,
     {
         match response.status() {
             // Bad request contains a body that needs to be serialized
