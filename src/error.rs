@@ -7,31 +7,19 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Map;
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum SaxoError {
-    HTTPError(Box<dyn StdError>),
+    #[error("HTTP error")]
+    HTTPError(#[from] Box<dyn StdError>),
+    #[error("unauthorized. Did you forget a valid Open API token?")]
     Unauthorized,
+    #[error("Bad request")]
     BadRequest(SaxoBadRequest),
-}
-
-impl error::Error for SaxoError {}
-
-impl fmt::Display for SaxoError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // TODO
-        write!(f, "SaxoError")
-    }
 }
 
 impl From<reqwest::Error> for SaxoError {
     fn from(err: reqwest::Error) -> Self {
         SaxoError::HTTPError(Box::new(err))
-    }
-}
-
-impl From<Box<dyn StdError>> for SaxoError {
-    fn from(err: Box<dyn StdError>) -> Self {
-        SaxoError::HTTPError(err)
     }
 }
 
