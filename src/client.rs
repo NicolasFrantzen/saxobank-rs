@@ -248,8 +248,8 @@ mod tests {
         // Check that the values came out properly
         let resp = client.get_port_user_info().await.unwrap();
 
-        assert_eq!(resp.name.unwrap().as_ref(), "Foo");
-        assert_eq!(resp.user_id.unwrap().as_ref(), "Bar");
-        assert_eq!(resp.language.unwrap().as_ref(), "C++");
+        assert_eq!(resp.name.unwrap(), "Foo");
+        assert_eq!(resp.user_id.unwrap(), "Bar");
+        assert_eq!(resp.language.unwrap(), "C++");
     }
 }
