@@ -8,30 +8,30 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Map;
 
 #[derive(Debug)]
-pub enum OpenAPIError {
+pub enum SaxoError {
     HTTPError(Box<dyn StdError>),
     Unauthorized,
-    BadRequest(OpenAPIBadRequest),
+    BadRequest(SaxoBadRequest),
 }
 
-impl error::Error for OpenAPIError {}
+impl error::Error for SaxoError {}
 
-impl fmt::Display for OpenAPIError {
+impl fmt::Display for SaxoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // TODO
-        write!(f, "OpenAPIError")
+        write!(f, "SaxoError")
     }
 }
 
-impl From<reqwest::Error> for OpenAPIError {
+impl From<reqwest::Error> for SaxoError {
     fn from(err: reqwest::Error) -> Self {
-        OpenAPIError::HTTPError(Box::new(err))
+        SaxoError::HTTPError(Box::new(err))
     }
 }
 
-impl From<Box<dyn StdError>> for OpenAPIError {
+impl From<Box<dyn StdError>> for SaxoError {
     fn from(err: Box<dyn StdError>) -> Self {
-        OpenAPIError::HTTPError(err)
+        SaxoError::HTTPError(err)
     }
 }
 
@@ -39,13 +39,13 @@ type ModelStateType = HashMap<String, Vec<String>>;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
-pub struct OpenAPIBadRequest {
+pub struct SaxoBadRequest {
     ErrorCode: ErrorCode,
     Message: String,
     ModelState: Option<ModelStateType>,
 }
 
-impl OpenAPIBadRequest {
+impl SaxoBadRequest {
     pub fn error_code(&self) -> &ErrorCode {
         &self.ErrorCode
     }
@@ -54,9 +54,9 @@ impl OpenAPIBadRequest {
     }
 }
 
-impl fmt::Display for OpenAPIBadRequest {
+impl fmt::Display for SaxoBadRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "OpenAPIBadRequest")
+        write!(f, "SaxoBadRequest")
     }
 }
 
@@ -156,14 +156,14 @@ mod tests {
     #[test]
     fn test_serde_bad_request()
     {
-        let bad_request = OpenAPIBadRequest {
+        let bad_request = SaxoBadRequest {
             ErrorCode: ErrorCode::InvalidRequestHeader,
             Message: "foo".to_string(),
             ModelState: None,
         };
 
         assert_tokens(&bad_request, &[
-            Token::Struct{ name: "OpenAPIBadRequest", len: 3 },
+            Token::Struct{ name: "SaxoBadRequest", len: 3 },
             Token::Str("ErrorCode"),
             Token::Str("InvalidRequestHeader"),
             Token::Str("Message"),
@@ -181,14 +181,14 @@ mod tests {
             ("$skip".to_owned(), vec!["Invalid $skip query parameter value: 2s".to_owned()])
         ]);
 
-        let bad_request = OpenAPIBadRequest {
+        let bad_request = SaxoBadRequest {
             ErrorCode: ErrorCode::InvalidRequestHeader,
             Message: "foo".to_string(),
             ModelState: Some(model_state),
         };
 
         assert_tokens(&bad_request, &[
-            Token::Struct{ name: "OpenAPIBadRequest", len: 3 },
+            Token::Struct{ name: "SaxoBadRequest", len: 3 },
             Token::Str("ErrorCode"),
             Token::Str("InvalidRequestHeader"),
             Token::Str("Message"),
@@ -233,7 +233,7 @@ mod tests {
         });
 
         println!("{:?}", bad_request);
-        let _bad_request_deserialized: OpenAPIBadRequest = serde_json::from_str(&bad_request.to_string()).unwrap();
+        let _bad_request_deserialized: SaxoBadRequest = serde_json::from_str(&bad_request.to_string()).unwrap();
     }
 
 }

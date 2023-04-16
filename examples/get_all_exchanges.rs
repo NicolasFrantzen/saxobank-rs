@@ -1,4 +1,4 @@
-use saxobank_rs::client::OpenAPIClient;
+use saxobank_rs::client::SaxoClient;
 
 use clap::{arg, command};
 use std::error::Error;
@@ -17,7 +17,7 @@ fn get_token() -> String
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>>
 {
-    let client = OpenAPIClient::new_sim(&get_token());
+    let client = SaxoClient::new_sim(&get_token());
     println!("{:?}", client.get_ref_exchanges().await?);
 
     Ok(())

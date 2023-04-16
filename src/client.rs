@@ -1,4 +1,4 @@
-use crate::error::{OpenAPIBadRequest, OpenAPIError, ErrorCode};
+use crate::error::{SaxoBadRequest, SaxoError, ErrorCode};
 use crate::messages::{portfolio, reference_data};
 use crate::SaxoRequest;
 
@@ -48,15 +48,15 @@ impl HttpSend for Sender {
     }
 }
 
-pub struct OpenAPIClient<S: HttpSend = Sender> {
+pub struct SaxoClient<S: HttpSend = Sender> {
     client: reqwest::Client,
     sender: S,
     env: Env,
 }
 
-impl OpenAPIClient<Sender> {
+impl SaxoClient<Sender> {
     fn new(token: &str, env: Env) -> Self {
-        OpenAPIClient {
+        SaxoClient {
             client: Self::build_client(token),
             sender: Sender,
             env,
@@ -72,9 +72,9 @@ impl OpenAPIClient<Sender> {
     }
 }
 
-impl<S: HttpSend> OpenAPIClient<S> {
-    pub fn sim_with_sender(sender: S, token: &str) -> OpenAPIClient<S> {
-        OpenAPIClient {
+impl<S: HttpSend> SaxoClient<S> {
+    pub fn sim_with_sender(sender: S, token: &str) -> SaxoClient<S> {
+        SaxoClient {
             client: Self::build_client(token),
             sender,
             env: Env::Sim,
@@ -100,7 +100,7 @@ impl<S: HttpSend> OpenAPIClient<S> {
     async fn get<T: SaxoRequest>(
         &self,
         request: T,
-    ) -> Result<T::ResponseType, OpenAPIError>
+    ) -> Result<T::ResponseType, SaxoError>
     where
         <T as SaxoRequest>::ResponseType: DeserializeOwned
     {
@@ -123,16 +123,16 @@ impl<S: HttpSend> OpenAPIClient<S> {
 
     async fn parse_response<T: SaxoRequest>(
         response: reqwest::Response,
-    ) -> Result<T::ResponseType, OpenAPIError>
+    ) -> Result<T::ResponseType, SaxoError>
     where
         <T as SaxoRequest>::ResponseType: DeserializeOwned,
     {
         match response.status() {
             // Bad request contains a body that needs to be serialized
-            reqwest::StatusCode::BAD_REQUEST => Err(OpenAPIError::BadRequest(
-                response.json::<OpenAPIBadRequest>().await?,
+            reqwest::StatusCode::BAD_REQUEST => Err(SaxoError::BadRequest(
+                response.json::<SaxoBadRequest>().await?,
             )),
-            reqwest::StatusCode::UNAUTHORIZED => Err(OpenAPIError::Unauthorized),
+            reqwest::StatusCode::UNAUTHORIZED => Err(SaxoError::Unauthorized),
 
             // Otherwise continue deserialization
             // If error > 401 return deserialized HTTP error
@@ -143,15 +143,15 @@ impl<S: HttpSend> OpenAPIClient<S> {
         }
     }
 
-    pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, OpenAPIError> {
+    pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, SaxoError> {
         self.get(portfolio::users::Request("me")).await
     }
 
-    pub async fn get_port_client_info(&self) -> Result<portfolio::clients::Response, OpenAPIError> {
+    pub async fn get_port_client_info(&self) -> Result<portfolio::clients::Response, SaxoError> {
         self.get(portfolio::clients::Request("me")).await
     }
 
-    pub async fn get_ref_exchanges(&self) -> Result<reference_data::exchanges::Response, OpenAPIError> {
+    pub async fn get_ref_exchanges(&self) -> Result<reference_data::exchanges::Response, SaxoError> {
         self.get(reference_data::exchanges::Request("?$top=3&$skip=2")).await
     }
 }
@@ -168,12 +168,12 @@ mod tests {
     #[tokio::test]
     async fn test_parse_ok() {
         let mut mock_sender = MockHttpSend::new();
-        let client = OpenAPIClient::sim_with_sender(mock_sender, "");
+        let client = SaxoClient::sim_with_sender(mock_sender, "");
 
         let response =
             reqwest::Response::from(http::Response::builder().status(200).body("{}").unwrap());
         let api_response =
-            OpenAPIClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
+            SaxoClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
 
         #[cfg(debug_assertions)]
         dbg!(&api_response);
@@ -183,24 +183,24 @@ mod tests {
     #[tokio::test]
     async fn test_parse_unauthorized() {
         let mut mock_sender = MockHttpSend::new();
-        let client = OpenAPIClient::sim_with_sender(mock_sender, "");
+        let client = SaxoClient::sim_with_sender(mock_sender, "");
 
         let response =
             reqwest::Response::from(http::Response::builder().status(401).body("{}").unwrap());
         let api_response =
-            OpenAPIClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
+            SaxoClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
 
         #[cfg(debug_assertions)]
         dbg!(&api_response);
         assert!(api_response.is_err());
 
-        assert!(matches!(api_response.unwrap_err(), OpenAPIError::Unauthorized));
+        assert!(matches!(api_response.unwrap_err(), SaxoError::Unauthorized));
     }
 
     #[tokio::test]
     async fn test_parse_bad_request() {
         let mut mock_sender = MockHttpSend::new();
-        let client = OpenAPIClient::sim_with_sender(mock_sender, "");
+        let client = SaxoClient::sim_with_sender(mock_sender, "");
 
         let status = 400;
         let response_body = json!({
@@ -214,14 +214,14 @@ mod tests {
                 .unwrap(),
         );
         let api_response =
-            OpenAPIClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
+            SaxoClient::<Sender>::parse_response::<portfolio::users::Request>(response).await;
 
         #[cfg(debug_assertions)]
         dbg!(&api_response);
 
         assert!(api_response.is_err());
 
-        if let OpenAPIError::BadRequest(c) = api_response.unwrap_err() {
+        if let SaxoError::BadRequest(c) = api_response.unwrap_err() {
             assert_eq!(c.error_code(), &ErrorCode::InvalidRequest);
             assert_eq!(c.message(), "Invalid request message");
         } else {
@@ -243,7 +243,7 @@ mod tests {
             ))
         });
 
-        let client = OpenAPIClient::sim_with_sender(mock_sender, "");
+        let client = SaxoClient::sim_with_sender(mock_sender, "");
 
         // Check that the values came out properly
         let resp = client.get_port_user_info().await.unwrap();
