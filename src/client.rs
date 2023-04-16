@@ -7,6 +7,7 @@ use mockall::automock;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Url;
 use serde::Deserialize;
+use serde::de::DeserializeOwned;
 
 use std::borrow::Cow;
 use std::error::Error;
@@ -96,12 +97,12 @@ impl<S: HttpSend> OpenAPIClient<S> {
             .unwrap_or_default()
     }
 
-    async fn get<'a, T: OpenAPIRequest>(
+    async fn get<T: OpenAPIRequest>(
         &self,
         request: T,
-    ) -> Result<T::ResponseType<'a>, OpenAPIError>
+    ) -> Result<T::ResponseType, OpenAPIError>
     where
-        for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de>,
+        <T as OpenAPIRequest>::ResponseType: DeserializeOwned
     {
         let env = String::from(self.env);
         let response = self
@@ -120,11 +121,11 @@ impl<S: HttpSend> OpenAPIClient<S> {
         Self::parse_response::<T>(response).await
     }
 
-    async fn parse_response<'a, T: OpenAPIRequest>(
+    async fn parse_response<T: OpenAPIRequest>(
         response: reqwest::Response,
-    ) -> Result<T::ResponseType<'a>, OpenAPIError>
+    ) -> Result<T::ResponseType, OpenAPIError>
     where
-        for<'de> <T as OpenAPIRequest>::ResponseType<'a>: Deserialize<'de>,
+        <T as OpenAPIRequest>::ResponseType: DeserializeOwned,
     {
         match response.status() {
             // Bad request contains a body that needs to be serialized
@@ -137,20 +138,20 @@ impl<S: HttpSend> OpenAPIClient<S> {
             // If error > 401 return deserialized HTTP error
             _ => Ok(response
                 .error_for_status()?
-                .json::<T::ResponseType<'a>>()
+                .json::<T::ResponseType>()
                 .await?),
         }
     }
 
-    pub async fn get_port_user_info<'a>(&self) -> Result<portfolio::users::Response, OpenAPIError> {
+    pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, OpenAPIError> {
         self.get(portfolio::users::Request("me")).await
     }
 
-    pub async fn get_port_client_info<'a>(&self) -> Result<portfolio::clients::Response, OpenAPIError> {
+    pub async fn get_port_client_info(&self) -> Result<portfolio::clients::Response, OpenAPIError> {
         self.get(portfolio::clients::Request("me")).await
     }
 
-    pub async fn get_ref_exchanges<'a>(&self) -> Result<reference_data::exchanges::Response, OpenAPIError> {
+    pub async fn get_ref_exchanges(&self) -> Result<reference_data::exchanges::Response, OpenAPIError> {
         self.get(reference_data::exchanges::Request("?$top=3&$skip=2")).await
     }
 }

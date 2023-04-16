@@ -7,7 +7,7 @@ pub mod messages;
 use std::fmt;
 
 pub(crate) trait OpenAPIRequest {
-    type ResponseType<'a>;
+    type ResponseType;
 
     fn id(&self) -> &str;
     fn path() -> &'static str;
