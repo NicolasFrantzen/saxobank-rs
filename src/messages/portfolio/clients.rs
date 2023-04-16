@@ -47,10 +47,10 @@ pub struct Response {
     supports_account_value_protection_limit: Option<bool>,
 }
 
-impl<'a> fmt::Display for Response {
+impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "OpenAPIRequest: Get clients info")
     }
 }
 
-impl<'a> SaxoResponse for Response { }
+impl SaxoResponse for Response { }

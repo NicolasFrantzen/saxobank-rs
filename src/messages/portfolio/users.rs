@@ -34,10 +34,10 @@ pub struct Response {
     pub user_key: Option<String>,
 }
 
-impl<'a> fmt::Display for Response {
+impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "OpenAPIRequest: Get user info")
     }
 }
 
-impl<'a> SaxoResponse for Response { }
+impl SaxoResponse for Response { }

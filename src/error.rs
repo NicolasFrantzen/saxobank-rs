@@ -61,9 +61,10 @@ impl fmt::Display for OpenAPIBadRequest {
 }
 
 /// Generic and domain specific error codes
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub enum ErrorCode {
     /// Default error code returned when it cannot be determined which part of the request is malformed.
+    #[default]
     InvalidRequest,
     /// Error code returned when one or more of the request headers are invalid.
     /// Used when the specific request header cannot be determined.
@@ -142,12 +143,6 @@ impl<'de> Deserialize<'de> for ErrorCode {
                 return Err(D::Error::custom("Unknown ErrorCode!"))
             }
         })
-    }
-}
-
-impl Default for ErrorCode {
-    fn default() -> Self {
-        ErrorCode::InvalidRequest
     }
 }
 
