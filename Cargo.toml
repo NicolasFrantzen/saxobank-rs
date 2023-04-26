@@ -16,3 +16,5 @@ serde_json = "1.0.91"
 serde_test = "1.0.152"
 thiserror = "1.0.40"
 tokio = { version = "1.22.0", features = ["full"] }
+
+saxobank-macro = { path = "macro" }

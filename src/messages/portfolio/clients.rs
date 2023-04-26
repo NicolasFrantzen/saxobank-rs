@@ -1,24 +1,14 @@
-use crate::{SaxoRequest, SaxoResponse};
+use saxobank_macro::{SaxoRequest, SaxoResponse};
 
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::fmt;
 
+#[derive(SaxoRequest)]
+#[saxo(openapi_path = "port/v1/clients/")]
 pub struct Request(pub &'static str);
 
-impl SaxoRequest for Request {
-    type ResponseType = Response;
-
-    fn id(&self) -> &str {
-        self.0
-    }
-
-    fn path() -> &'static str {
-        "port/v1/clients/"
-    }
-}
-
-#[derive(Deserialize, Debug, Default, PartialEq)]
+#[derive(SaxoResponse, Deserialize, Debug, Default, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Response {
     account_value_protection_limit: Option<f32>,
@@ -46,11 +36,3 @@ pub struct Response {
     reduce_exposure_only: Option<bool>,
     supports_account_value_protection_limit: Option<bool>,
 }
-
-impl fmt::Display for Response {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SaxoRequest: Get clients info")
-    }
-}
-
-impl SaxoResponse for Response { }
