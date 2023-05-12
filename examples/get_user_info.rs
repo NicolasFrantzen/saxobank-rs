@@ -17,7 +17,7 @@ fn get_token() -> String
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>>
 {
-    let client = SaxoClient::new_sim(&get_token());
+    let client = SaxoClient::new_sim(&get_token())?;
     println!("{:?}", client.get_port_user_info().await?);
 
     Ok(())

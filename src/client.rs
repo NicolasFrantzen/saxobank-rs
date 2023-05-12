@@ -1,4 +1,4 @@
-use crate::error::{SaxoBadRequest, SaxoError, ErrorCode};
+use crate::error::{SaxoBadRequest, SaxoClientError, SaxoError, ErrorCode};
 use crate::messages::{portfolio, reference_data};
 use crate::SaxoRequest;
 
@@ -55,34 +55,34 @@ pub struct SaxoClient<S: HttpSend = Sender> {
 }
 
 impl SaxoClient<Sender> {
-    fn new(token: &str, env: Env) -> Self {
-        SaxoClient {
-            client: Self::build_client(token),
+    fn new(token: &str, env: Env) -> Result<Self, SaxoClientError> {
+        Ok(SaxoClient {
+            client: Self::build_client(token)?,
             sender: Sender,
             env,
-        }
+        })
     }
 
-    pub fn new_sim(token: &str) -> Self {
+    pub fn new_sim(token: &str) -> Result<Self, SaxoClientError> {
         Self::new(token, Env::Sim)
     }
 
-    pub fn new_live(token: &str) -> Self {
+    pub fn new_live(token: &str) -> Result<Self, SaxoClientError> {
         Self::new(token, Env::Live)
     }
 }
 
 impl<S: HttpSend> SaxoClient<S> {
-    pub fn sim_with_sender(sender: S, token: &str) -> SaxoClient<S> {
-        SaxoClient {
-            client: Self::build_client(token),
+    pub fn sim_with_sender(sender: S, token: &str) -> Result<Self, SaxoClientError> {
+        Ok(SaxoClient {
+            client: Self::build_client(token)?,
             sender,
             env: Env::Sim,
-        }
+        })
     }
 
-    fn build_client(token: &str) -> reqwest::Client {
-        let mut headers = HeaderMap::new(); // TODO: Create header builder
+    fn build_client(token: &str) -> reqwest::Result<reqwest::Client> {
+        let mut headers = HeaderMap::new();
         headers.insert("Accept", HeaderValue::from_static("*/*"));
         headers.insert(
             "Authorization",
@@ -94,7 +94,6 @@ impl<S: HttpSend> SaxoClient<S> {
         reqwest::ClientBuilder::new()
             .default_headers(headers)
             .build()
-            .unwrap_or_default()
     }
 
     async fn get<T: SaxoRequest>(
@@ -243,7 +242,7 @@ mod tests {
             ))
         });
 
-        let client = SaxoClient::sim_with_sender(mock_sender, "");
+        let client = SaxoClient::sim_with_sender(mock_sender, "").unwrap();
 
         // Check that the values came out properly
         let resp = client.get_port_user_info().await.unwrap();

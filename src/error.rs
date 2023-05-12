@@ -8,6 +8,11 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Map;
 
 #[derive(thiserror::Error, Debug)]
+#[error(transparent)]
+pub struct SaxoClientError(#[from] reqwest::Error);
+
+
+#[derive(thiserror::Error, Debug)]
 pub enum SaxoError {
     #[error("HTTP error")]
     HTTPError(#[from] Box<dyn StdError>),
@@ -223,5 +228,4 @@ mod tests {
         println!("{:?}", bad_request);
         let _bad_request_deserialized: SaxoBadRequest = serde_json::from_str(&bad_request.to_string()).unwrap();
     }
-
 }
