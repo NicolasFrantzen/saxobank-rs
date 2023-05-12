@@ -1,5 +1,6 @@
 use saxobank_macro::{SaxoRequest, SaxoResponse};
 
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::fmt;
@@ -31,8 +32,8 @@ pub struct ResponseData {
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug, Default, PartialEq)]
 pub struct ExchangeSession {
-    pub EndTime: Option<String>, // TODO: Parse UtcDateTime
-    pub StartTime: Option<String>, // TODO: Parse UtcDateTime
+    pub EndTime: Option<DateTime<Utc>>,
+    pub StartTime: Option<DateTime<Utc>>,
     pub State: Option<String>, // TODO: Parse ExchangeSessionState enums with descriptions
 
 }
