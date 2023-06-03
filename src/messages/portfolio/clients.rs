@@ -1,8 +1,6 @@
 use saxobank_macro::{SaxoRequest, SaxoResponse};
 
 use serde::Deserialize;
-use std::borrow::Cow;
-use std::fmt;
 
 #[derive(SaxoRequest)]
 #[saxo(openapi_path = "port/v1/clients/")]

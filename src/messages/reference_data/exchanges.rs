@@ -3,8 +3,6 @@ use saxobank_macro::{SaxoRequest, SaxoResponse};
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use strum::EnumString;
-use std::borrow::Cow;
-use std::fmt;
 
 #[derive(SaxoRequest)]
 #[saxo(openapi_path = "ref/v1/exchanges/")]

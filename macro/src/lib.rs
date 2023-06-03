@@ -66,6 +66,7 @@ pub fn derive_saxo_response(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         use crate::SaxoResponse;
+        use std::fmt;
 
         impl SaxoResponse for Response { }
 
