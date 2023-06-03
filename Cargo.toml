@@ -19,3 +19,4 @@ tokio = { version = "1.22.0", features = ["full"] }
 
 saxobank-macro = { path = "macro" }
 chrono = { version = "0.4.24", features = ["serde"] }
+strum = { version = "0.24.1", features = ["derive"] }
