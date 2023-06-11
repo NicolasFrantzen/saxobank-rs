@@ -22,7 +22,7 @@ pub trait SaxoResponse: fmt::Display + fmt::Debug { }
 #[macro_export]
 macro_rules! saxo_request {
     ($str: tt) => {
-        use crate::SaxoRequest;
+        use $crate::SaxoRequest;
 
         pub struct Request(pub &'static str);
 
@@ -43,7 +43,7 @@ macro_rules! saxo_request {
 #[macro_export]
 macro_rules! saxo_response {
     (struct $name:ident { $($fname:ident : $ftype:ty),* }) => {
-        use crate::SaxoResponse;
+        use $crate::SaxoResponse;
         use serde::Deserialize;
 
         #[derive(Deserialize, Debug, Default, PartialEq)]
