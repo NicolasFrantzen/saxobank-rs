@@ -1,3 +1,6 @@
+//! Request and response definition for
+//! <https://www.developer.saxo/openapi/referencedocs/port/v1/clients>
+
 use crate::{saxo_request, saxo_response};
 
 saxo_request!("port/v1/clients/");

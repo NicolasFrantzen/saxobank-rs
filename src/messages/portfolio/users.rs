@@ -1,7 +1,9 @@
+//! Request and response definition for
+//! <https://www.developer.saxo/openapi/referencedocs/port/v1/users>
+
 use crate::{saxo_request, saxo_response};
 
-saxo_request!("port/v1/users/");
-
+saxo_request!{"port/v1/users/"}
 saxo_response!{
     client_key: String,
     culture: String,

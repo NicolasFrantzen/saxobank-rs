@@ -1,41 +1,31 @@
 use saxobank_macro::{SaxoRequest, SaxoResponse};
+use crate::{saxo_request_odata, saxo_response_odata};
 
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use strum::EnumString;
 
-#[derive(SaxoRequest)]
-#[saxo(openapi_path = "ref/v1/exchanges/")]
-pub struct Request(pub &'static str);
-
-// TODO: Make proc macro for OData messages. https://msdn.microsoft.com/en-us/library/jj643270.aspx
-#[derive(SaxoResponse, Deserialize, Debug, Default, PartialEq)]
-pub struct Response {
-    #[serde(rename = "__count")]
-    pub count: Option<i32>,
-    #[serde(rename = "__next")]
-    pub next: Option<String>,
-    #[serde(rename = "Data")]
-    pub data: Vec<ResponseData>,
+saxo_request_odata!{
+    "ref/v1/exchanges/"
 }
 
-#[derive(Deserialize, Debug, Default, PartialEq)]
-#[serde(rename_all = "PascalCase")]
-pub struct ResponseData {
-    pub all_day: Option<bool>,
-    pub country_code: Option<String>,
-    pub currency: Option<String>,
-    pub exchange_id: Option<String>,
-    pub exchange_sessions: Option<ExchangeSession>,
-    pub iso_mic: Option<String>,
-    pub name: Option<String>,
-    pub operating_mic: Option<String>,
-    pub price_source_name: Option<String>,
-    pub time_zone: Option<i32>,
-    pub time_zone_abbreviation: Option<String>,
-    pub time_zone_id: Option<String>,
+
+// OData protocol. See: https://msdn.microsoft.com/en-us/library/jj643270.aspx
+saxo_response_odata!{
+    all_day: bool,
+    country_code: String,
+    currency: String,
+    exchange_id: String,
+    exchange_sessions: ExchangeSession,
+    iso_mic: String,
+    name: String,
+    operating_mic: String,
+    price_source_name: String,
+    time_zone: i32,
+    time_zone_abbreviation: String,
+    time_zone_id: String
     // TODO
-    //pub time_zone_offset: Option<TimeSpan>,
+    //time_zone_offset: TimeSpan,
 }
 
 #[derive(Deserialize, Debug, Default, PartialEq)]

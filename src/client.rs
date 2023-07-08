@@ -143,15 +143,21 @@ impl<S: HttpSend> SaxoClient<S> {
     }
 
     pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, SaxoError> {
-        self.get(portfolio::users::Request("me")).await
+        self.get(portfolio::users::Request{
+            id: "me",
+        }).await
     }
 
     pub async fn get_port_client_info(&self) -> Result<portfolio::clients::Response, SaxoError> {
-        self.get(portfolio::clients::Request("me")).await
+        self.get(portfolio::clients::Request {
+            id: "me",
+        }).await
     }
 
     pub async fn get_ref_exchanges(&self) -> Result<reference_data::exchanges::Response, SaxoError> {
-        self.get(reference_data::exchanges::Request("?$top=3&$skip=2")).await
+        self.get(reference_data::exchanges::Request {
+            next: String::from("?$top=3&$skip=2"),
+         }).await
     }
 }
 
@@ -161,8 +167,6 @@ mod tests {
 
     use reqwest::Response;
     use serde_json::json;
-
-    use std::{cell::RefCell, error::Error};
 
     #[tokio::test]
     async fn test_parse_ok() {
