@@ -1,17 +1,16 @@
-use saxobank_macro::{SaxoRequest, SaxoResponse};
 use crate::{saxo_request_odata, saxo_response_odata};
+use saxobank_macro::{SaxoRequest, SaxoResponse};
 
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use strum::EnumString;
 
-saxo_request_odata!{
+saxo_request_odata! {
     "ref/v1/exchanges/"
 }
 
-
 // OData protocol. See: https://msdn.microsoft.com/en-us/library/jj643270.aspx
-saxo_response_odata!{
+saxo_response_odata! {
     all_day: bool,
     country_code: String,
     currency: String,
@@ -82,8 +81,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn test_serde_exchange_session()
-    {
+    fn test_serde_exchange_session() {
         let response = json!({
             "EndTime": "2021-05-21T00:00:00Z",
             "StartTime": "2021-05-21T00:00:00Z",
@@ -96,24 +94,23 @@ mod tests {
     }
 
     #[test]
-    fn test_serde_exchanges()
-    {
+    fn test_serde_exchanges() {
         let response = json!({
-            "__next": "/openapi/....../?$top=1&$skip=1",
-            "Data": [
-              {
-                "CountryCode": "ES",
-                "Currency": "EUR",
-                "ExchangeId": "SIBE",
-                "IsoMic": "XMAD",
-                "Mic": "XMCE",
-                "Name": "BME Spanish Exchanges",
-                "OperatingMic": "BMEX",
-                "TimeZone": 4,
-                "TimeZoneOffset": "00:00:00"
-              }
-            ]
-          });
+          "__next": "/openapi/....../?$top=1&$skip=1",
+          "Data": [
+            {
+              "CountryCode": "ES",
+              "Currency": "EUR",
+              "ExchangeId": "SIBE",
+              "IsoMic": "XMAD",
+              "Mic": "XMCE",
+              "Name": "BME Spanish Exchanges",
+              "OperatingMic": "BMEX",
+              "TimeZone": 4,
+              "TimeZoneOffset": "00:00:00"
+            }
+          ]
+        });
 
         let response_deserialized = serde_json::from_str::<Response>(&response.to_string());
         assert!(response_deserialized.is_ok());

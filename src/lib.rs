@@ -10,7 +10,9 @@ pub trait SaxoRequest {
     type ResponseType;
 
     fn id(&self) -> &str;
-    fn endpoint() -> &'static str where Self: Sized;
+    fn endpoint() -> &'static str
+    where
+        Self: Sized;
 }
 
 pub trait SaxoResponse: fmt::Display + fmt::Debug {

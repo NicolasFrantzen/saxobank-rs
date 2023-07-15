@@ -1,4 +1,4 @@
-use crate::error::{SaxoBadRequest, SaxoClientError, SaxoError, ErrorCode};
+use crate::error::{ErrorCode, SaxoBadRequest, SaxoClientError, SaxoError};
 use crate::messages::{portfolio, reference_data};
 use crate::{SaxoRequest, SaxoResponse, SaxoResponseOData};
 
@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use mockall::automock;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Url;
-use serde::Deserialize;
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
 
 use std::borrow::Cow;
 use std::error::Error;
@@ -96,12 +96,9 @@ impl<S: HttpSend> SaxoClient<S> {
             .build()
     }
 
-    async fn get<T: SaxoRequest>(
-        &self,
-        request: T,
-    ) -> Result<T::ResponseType, SaxoError>
+    async fn get<T: SaxoRequest>(&self, request: T) -> Result<T::ResponseType, SaxoError>
     where
-        <T as SaxoRequest>::ResponseType: DeserializeOwned
+        <T as SaxoRequest>::ResponseType: DeserializeOwned,
     {
         let env = String::from(self.env);
         let response = self
@@ -124,7 +121,7 @@ impl<S: HttpSend> SaxoClient<S> {
         response: reqwest::Response,
     ) -> Result<T::ResponseType, SaxoError>
     where
-        <T as SaxoRequest>::ResponseType: DeserializeOwned
+        <T as SaxoRequest>::ResponseType: DeserializeOwned,
     {
         match response.status() {
             // Bad request contains a body that needs to be serialized
@@ -144,31 +141,30 @@ impl<S: HttpSend> SaxoClient<S> {
 
     pub async fn get_next<T: SaxoResponseOData>(
         &self,
-        resp: &T
+        resp: &T,
     ) -> Result<<<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType, SaxoError>
     where
         <T as SaxoResponse>::RequestType: SaxoRequest,
-        for<'de> <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: Deserialize<'de>
+        for<'de> <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: Deserialize<'de>,
     {
         self.get(resp.next().unwrap()).await
     }
 
     pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, SaxoError> {
-        self.get(portfolio::users::Request{
-            id: "me",
-        }).await
+        self.get(portfolio::users::Request { id: "me" }).await
     }
 
     pub async fn get_port_client_info(&self) -> Result<portfolio::clients::Response, SaxoError> {
-        self.get(portfolio::clients::Request {
-            id: "me",
-        }).await
+        self.get(portfolio::clients::Request { id: "me" }).await
     }
 
-    pub async fn get_ref_exchanges(&self) -> Result<reference_data::exchanges::Response, SaxoError> {
+    pub async fn get_ref_exchanges(
+        &self,
+    ) -> Result<reference_data::exchanges::Response, SaxoError> {
         self.get(reference_data::exchanges::Request {
             next: String::from("?$top=3&$skip=2"),
-         }).await
+        })
+        .await
     }
 }
 
@@ -249,11 +245,17 @@ mod tests {
 
         mock_sender.expect_send().once().returning(move |_| {
             Ok(reqwest::Response::from(
-                http::Response::builder().status(200).body(json!({
-                    "Name": "Foo",
-                    "UserId": "Bar",
-                    "Language": "C++",
-                }).to_string()).unwrap(),
+                http::Response::builder()
+                    .status(200)
+                    .body(
+                        json!({
+                            "Name": "Foo",
+                            "UserId": "Bar",
+                            "Language": "C++",
+                        })
+                        .to_string(),
+                    )
+                    .unwrap(),
             ))
         });
 

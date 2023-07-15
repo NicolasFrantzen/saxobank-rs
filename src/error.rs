@@ -1,16 +1,15 @@
+use std::collections::HashMap;
 use std::error;
 use std::fmt;
-use std::collections::HashMap;
 
-use serde::ser::StdError;
 use serde::de::Error;
+use serde::ser::StdError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Map;
 
 #[derive(thiserror::Error, Debug)]
 #[error(transparent)]
 pub struct SaxoClientError(#[from] reqwest::Error);
-
 
 #[derive(thiserror::Error, Debug)]
 pub enum SaxoError {
@@ -91,7 +90,8 @@ pub enum ErrorCode {
 
 impl Serialize for ErrorCode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         serializer.serialize_str(match *self {
             ErrorCode::InvalidRequest => "InvalidRequest",
@@ -114,7 +114,8 @@ impl Serialize for ErrorCode {
 
 impl<'de> Deserialize<'de> for ErrorCode {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
         Ok(match s.as_str() {
@@ -132,9 +133,7 @@ impl<'de> Deserialize<'de> for ErrorCode {
             "UnsupportedSubscriptionFormat" => ErrorCode::UnsupportedSubscriptionFormat,
             "RequestNotAllowed" => ErrorCode::RequestNotAllowed,
             "DomainValidationError" => ErrorCode::DomainValidationError,
-            &_ => {
-                return Err(D::Error::custom("Unknown ErrorCode!"))
-            }
+            &_ => return Err(D::Error::custom("Unknown ErrorCode!")),
         })
     }
 }
@@ -144,35 +143,40 @@ mod tests {
     use super::*;
 
     use serde_json::json;
-    use serde_test::{Token, assert_tokens, assert_de_tokens_error};
+    use serde_test::{assert_de_tokens_error, assert_tokens, Token};
 
     #[test]
-    fn test_serde_bad_request()
-    {
+    fn test_serde_bad_request() {
         let bad_request = SaxoBadRequest {
             ErrorCode: ErrorCode::InvalidRequestHeader,
             Message: "foo".to_string(),
             ModelState: None,
         };
 
-        assert_tokens(&bad_request, &[
-            Token::Struct{ name: "SaxoBadRequest", len: 3 },
-            Token::Str("ErrorCode"),
-            Token::Str("InvalidRequestHeader"),
-            Token::Str("Message"),
-            Token::Str("foo"),
-            Token::Str("ModelState"),
-            Token::None,
-            Token::StructEnd,
-        ]);
+        assert_tokens(
+            &bad_request,
+            &[
+                Token::Struct {
+                    name: "SaxoBadRequest",
+                    len: 3,
+                },
+                Token::Str("ErrorCode"),
+                Token::Str("InvalidRequestHeader"),
+                Token::Str("Message"),
+                Token::Str("foo"),
+                Token::Str("ModelState"),
+                Token::None,
+                Token::StructEnd,
+            ],
+        );
     }
 
     #[test]
-    fn test_serde_bad_request_modal_state()
-    {
-        let model_state = HashMap::from([
-            ("$skip".to_owned(), vec!["Invalid $skip query parameter value: 2s".to_owned()])
-        ]);
+    fn test_serde_bad_request_modal_state() {
+        let model_state = HashMap::from([(
+            "$skip".to_owned(),
+            vec!["Invalid $skip query parameter value: 2s".to_owned()],
+        )]);
 
         let bad_request = SaxoBadRequest {
             ErrorCode: ErrorCode::InvalidRequestHeader,
@@ -180,32 +184,34 @@ mod tests {
             ModelState: Some(model_state),
         };
 
-        assert_tokens(&bad_request, &[
-            Token::Struct{ name: "SaxoBadRequest", len: 3 },
-            Token::Str("ErrorCode"),
-            Token::Str("InvalidRequestHeader"),
-            Token::Str("Message"),
-            Token::Str("foo"),
-            Token::Str("ModelState"),
-            Token::Some,
-            Token::Map { len: Some(1), },
-            Token::Str("$skip"),
-            Token::Seq { len: Some(1), },
-            Token::Str("Invalid $skip query parameter value: 2s"),
-            Token::SeqEnd,
-            Token::MapEnd,
-            Token::StructEnd,
-        ]);
+        assert_tokens(
+            &bad_request,
+            &[
+                Token::Struct {
+                    name: "SaxoBadRequest",
+                    len: 3,
+                },
+                Token::Str("ErrorCode"),
+                Token::Str("InvalidRequestHeader"),
+                Token::Str("Message"),
+                Token::Str("foo"),
+                Token::Str("ModelState"),
+                Token::Some,
+                Token::Map { len: Some(1) },
+                Token::Str("$skip"),
+                Token::Seq { len: Some(1) },
+                Token::Str("Invalid $skip query parameter value: 2s"),
+                Token::SeqEnd,
+                Token::MapEnd,
+                Token::StructEnd,
+            ],
+        );
     }
 
     #[test]
-    fn test_serde_error_code_unknown()
-    {
+    fn test_serde_error_code_unknown() {
         assert_de_tokens_error::<ErrorCode>(
-            &[
-                Token::Str("ErrorCode"),
-                Token::Str("Foo"),
-            ],
+            &[Token::Str("ErrorCode"), Token::Str("Foo")],
             "Unknown ErrorCode!",
         );
     }
@@ -214,8 +220,7 @@ mod tests {
     /// https://www.developer.saxo/openapi/learn/openapi-request-response
     /// Indeed can be deserialized, with our struct.
     #[test]
-    fn test_serde_model_state()
-    {
+    fn test_serde_model_state() {
         let bad_request = json!({
             "ErrorCode":"InvalidModelState",
             "Message":"One or more properties of the request are invalid!",
@@ -226,6 +231,7 @@ mod tests {
         });
 
         println!("{:?}", bad_request);
-        let _bad_request_deserialized: SaxoBadRequest = serde_json::from_str(&bad_request.to_string()).unwrap();
+        let _bad_request_deserialized: SaxoBadRequest =
+            serde_json::from_str(&bad_request.to_string()).unwrap();
     }
 }
