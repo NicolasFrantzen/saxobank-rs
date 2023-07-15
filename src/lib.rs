@@ -10,13 +10,15 @@ pub trait SaxoRequest {
     type ResponseType;
 
     fn id(&self) -> &str;
-    fn path() -> &'static str where Self: Sized;
+    fn endpoint() -> &'static str where Self: Sized;
 }
 
-pub trait SaxoResponse: fmt::Display + fmt::Debug { }
+pub trait SaxoResponse: fmt::Display + fmt::Debug {
+    type RequestType;
+}
 
-pub trait SaxoResponseOData {
-    fn next(&self) -> Option<Box<dyn SaxoRequest<ResponseType = Self>>>;
+pub trait SaxoResponseOData: SaxoResponse {
+    fn next(&self) -> Option<Self::RequestType>;
 }
 
 /// Defines a Request and implements SaxoRequest trait with specified path.
@@ -39,7 +41,7 @@ macro_rules! saxo_request {
                 self.id
             }
 
-            fn path() -> &'static str {
+            fn endpoint() -> &'static str {
                 $str
             }
         }
@@ -63,7 +65,7 @@ macro_rules! saxo_request_odata {
                 &self.next
             }
 
-            fn path() -> &'static str {
+            fn endpoint() -> &'static str {
                 $str
             }
         }
@@ -79,7 +81,9 @@ macro_rules! saxo_response {
             $(pub $fname : Option<$ftype>),*
         }
 
-        impl $crate::SaxoResponse for $name { }
+        impl $crate::SaxoResponse for $name {
+            type RequestType = Request;
+        }
 
         impl std::fmt::Display for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -106,12 +110,15 @@ macro_rules! saxo_response_odata {
             pub data: Vec<ResponseData>,
         }
 
-        impl $crate::SaxoResponse for $name { }
+        impl $crate::SaxoResponse for $name {
+            type RequestType = Request;
+        }
+
         impl $crate::SaxoResponseOData for $name {
-            fn next(&self) -> Option<Box<dyn SaxoRequest<ResponseType = Self>>> {
-                Some(Box::new(Request{
+            fn next(&self) -> Option<Self::RequestType> {
+                Some(Request{
                     next: self.next.clone()?,
-                }))
+                })
             }
         }
 

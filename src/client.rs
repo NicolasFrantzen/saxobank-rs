@@ -1,6 +1,6 @@
 use crate::error::{SaxoBadRequest, SaxoClientError, SaxoError, ErrorCode};
 use crate::messages::{portfolio, reference_data};
-use crate::SaxoRequest;
+use crate::{SaxoRequest, SaxoResponse, SaxoResponseOData};
 
 use async_trait::async_trait;
 use mockall::automock;
@@ -109,7 +109,7 @@ impl<S: HttpSend> SaxoClient<S> {
             .send(self.client.get(format!(
                 "https://gateway.saxobank.com/{}/openapi/{}{}", // TODO: make configurable and use .join instead
                 env,
-                T::path(),
+                T::endpoint(),
                 request.id()
             )))
             .await?;
@@ -124,7 +124,7 @@ impl<S: HttpSend> SaxoClient<S> {
         response: reqwest::Response,
     ) -> Result<T::ResponseType, SaxoError>
     where
-        <T as SaxoRequest>::ResponseType: DeserializeOwned,
+        <T as SaxoRequest>::ResponseType: DeserializeOwned
     {
         match response.status() {
             // Bad request contains a body that needs to be serialized
@@ -140,6 +140,17 @@ impl<S: HttpSend> SaxoClient<S> {
                 .json::<T::ResponseType>()
                 .await?),
         }
+    }
+
+    pub async fn get_next<T: SaxoResponseOData>(
+        &self,
+        resp: &T
+    ) -> Result<<<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType, SaxoError>
+    where
+        <T as SaxoResponse>::RequestType: SaxoRequest,
+        for<'de> <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: Deserialize<'de>
+    {
+        self.get(resp.next().unwrap()).await
     }
 
     pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, SaxoError> {
