@@ -1,6 +1,6 @@
 use crate::error::{ErrorCode, SaxoBadRequest, SaxoClientError, SaxoError};
 use crate::messages::{portfolio, reference_data};
-use crate::{SaxoRequest, SaxoResponse, SaxoResponseOData};
+use crate::{SaxoRequest, SaxoResponse, SaxoResponseOData, EndPointArgument, ODataParams};
 
 use async_trait::async_trait;
 use mockall::automock;
@@ -107,7 +107,7 @@ impl<S: HttpSend> SaxoClient<S> {
                 "https://gateway.saxobank.com/{}/openapi/{}{}", // TODO: make configurable and use .join instead
                 env,
                 T::endpoint(),
-                request.id()
+                request.argument()
             )))
             .await?;
 
@@ -151,20 +151,17 @@ impl<S: HttpSend> SaxoClient<S> {
     }
 
     pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, SaxoError> {
-        self.get(portfolio::users::Request { id: "me" }).await
+        self.get(portfolio::users::Request::new("me")).await
     }
 
     pub async fn get_port_client_info(&self) -> Result<portfolio::clients::Response, SaxoError> {
-        self.get(portfolio::clients::Request { id: "me" }).await
+        self.get(portfolio::clients::Request::new("me")).await
     }
 
     pub async fn get_ref_exchanges(
         &self,
     ) -> Result<reference_data::exchanges::Response, SaxoError> {
-        self.get(reference_data::exchanges::Request {
-            next: String::from("?$top=3&$skip=2"),
-        })
-        .await
+        self.get(reference_data::exchanges::Request::new(ODataParams { top: 5, skip: 0 })).await
     }
 }
 
