@@ -15,7 +15,7 @@ saxo_response_odata! {
     country_code: String,
     currency: String,
     exchange_id: String,
-    exchange_sessions: ExchangeSession,
+    //exchange_sessions: ExchangeSession, TODO: Fix
     iso_mic: String,
     name: String,
     operating_mic: String,

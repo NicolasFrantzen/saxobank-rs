@@ -11,6 +11,7 @@ use serde::Deserialize;
 
 use std::borrow::Cow;
 use std::error::Error;
+use std::fmt;
 
 #[derive(Clone, Copy)]
 enum Env {
@@ -147,7 +148,7 @@ impl<S: HttpSend> SaxoClient<S> {
         <T as SaxoResponse>::RequestType: SaxoRequest,
         for<'de> <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: Deserialize<'de>,
     {
-        self.get(resp.next().unwrap()).await
+        self.get(resp.next().unwrap()).await // TODO: Fix unwrap
     }
 
     pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, SaxoError> {
@@ -160,8 +161,41 @@ impl<S: HttpSend> SaxoClient<S> {
 
     pub async fn get_ref_exchanges(
         &self,
-    ) -> Result<reference_data::exchanges::Response, SaxoError> {
-        self.get(reference_data::exchanges::Request::new(ODataParams { top: 5, skip: 0 })).await
+    ) -> Result<reference_data::exchanges::Response, SaxoError> { // TODO: return a next handle?
+        self.get(reference_data::exchanges::Request::new(ODataParams { top: Some(5), skip: Some(0) })).await
+    }
+
+    pub async fn get_ref_exchanges2(
+        &self,
+        params: ODataParams
+    ) -> Result<NextHandle<'_, S, reference_data::exchanges::Response>, SaxoError> {
+        let resp = self.get(reference_data::exchanges::Request::new(params)).await;
+        Ok(NextHandle{client: self, resp: resp?})
+    }
+}
+
+pub struct NextHandle<'a, S: HttpSend, T: SaxoResponseOData> {
+    client: &'a SaxoClient<S>,
+    resp: T,
+}
+
+impl<'a, S: HttpSend, T: SaxoResponseOData> NextHandle<'a, S, T> {
+    pub async fn next(self) -> Result<NextHandle<'a, S, <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType>, SaxoError>
+    where
+        <T as SaxoResponse>::RequestType: SaxoRequest,
+        for<'de> <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: Deserialize<'de>,
+        <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: SaxoResponseOData
+    {
+        let resp = self.client
+            .get_next(&self.resp)
+            .await;
+        Ok(NextHandle { client: self.client, resp: resp? })
+    }
+}
+
+impl<'a, S: HttpSend, T: SaxoResponseOData> fmt::Debug for NextHandle<'a, S, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.resp, f)
     }
 }
 
@@ -169,6 +203,7 @@ impl<S: HttpSend> SaxoClient<S> {
 mod tests {
     use super::*;
 
+    use crate::{saxo_request_odata, saxo_response_odata};
     use reqwest::Response;
     use serde_json::json;
 
@@ -259,10 +294,54 @@ mod tests {
         let client = SaxoClient::sim_with_sender(mock_sender, "").unwrap();
 
         // Check that the values came out properly
-        let resp = client.get_port_user_info().await.unwrap();
+        let resp = client.get_port_user_info().await.unwrap(); // TODO: We should create messages with the macro instead of using specific ones
 
         assert_eq!(resp.name.unwrap(), "Foo");
         assert_eq!(resp.user_id.unwrap(), "Bar");
         assert_eq!(resp.language.unwrap(), "C++");
+    }
+
+    #[tokio::test]
+    async fn test_get_odata_next() {
+        saxo_request_odata!("foo/bar/");
+        saxo_response_odata! {
+            foo: String
+        }
+
+        let mut mock_sender = MockHttpSend::new();
+
+        mock_sender.expect_send().return_once(move |_| {
+            Ok(reqwest::Response::from(
+                http::Response::builder()
+                    .status(200)
+                    .body(
+                        json!({
+                            "__next": "/foo/bar/?$top=123&$skip=42",
+                            "Data": [
+                              {
+                                "Foo": "Bar",
+                              }
+                            ]
+                          })
+                        .to_string(),
+                    )
+                    .unwrap(),
+            ))
+        });
+
+        let client = SaxoClient::sim_with_sender(mock_sender, "").unwrap();
+        let resp = client.get(Request::new(ODataParams { top: Some(123), skip: Some(42) })).await;
+
+        #[cfg(debug_assertions)]
+        dbg!(&resp);
+
+        // TODO: We want to check that get_next calls get with a Request with the correct params
+        // TODO: Create new mock, test calls
+        //let next_resp = client.get_next(&resp.unwrap()).await; // Maybe we don't care about returning anything here
+    }
+
+    #[tokio::test]
+    async fn test_next_handle() {
+        // TODO
     }
 }
