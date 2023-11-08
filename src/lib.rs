@@ -16,28 +16,33 @@ impl fmt::Display for EndPointArgument {
         match self {
             EndPointArgument::Id(id) => write!(f, "{}", id),
             EndPointArgument::OData(odata) => {
-                let mid = if odata.top.is_some() && odata.skip.is_some() { "&" }  else { "" };
-                write!(f, "?{}{}{}",
-                    odata.top.map_or("".to_string(), |top| format!("$top={}", top) ),
+                let mid = if odata.top.is_some() && odata.skip.is_some() {
+                    "&"
+                } else {
+                    ""
+                };
+                write!(
+                    f,
+                    "?{}{}{}",
+                    odata
+                        .top
+                        .map_or("".to_string(), |top| format!("$top={}", top)),
                     mid,
-                    odata.skip.map_or("".to_string(), |skip| format!("$skip={}", skip) ))
-            },
+                    odata
+                        .skip
+                        .map_or("".to_string(), |skip| format!("$skip={}", skip))
+                )
+            }
         }
     }
 }
 
-#[derive(serde::Deserialize, Debug, PartialEq)]
+#[derive(serde::Deserialize, Debug, PartialEq, Default)]
 pub struct ODataParams {
     #[serde(rename = "$top")]
     pub top: Option<i32>,
     #[serde(rename = "$skip")]
     pub skip: Option<i32>,
-}
-
-impl Default for ODataParams {
-    fn default() -> Self {
-        ODataParams {top: None, skip: None}
-    }
 }
 
 pub trait SaxoRequest {
@@ -62,8 +67,8 @@ pub trait SaxoResponseOData: SaxoResponse {
 #[macro_export]
 macro_rules! saxo_request {
     ($str: tt) => {
-        use $crate::SaxoRequest;
         use $crate::EndPointArgument;
+        use $crate::SaxoRequest;
 
         pub struct Request {
             argument: EndPointArgument, // TODO: maybe make constructor
@@ -71,7 +76,9 @@ macro_rules! saxo_request {
 
         impl Request {
             pub fn new(id: &'static str) -> Self {
-                Request { argument: EndPointArgument::Id(id) }
+                Request {
+                    argument: EndPointArgument::Id(id),
+                }
             }
         }
 
@@ -188,7 +195,6 @@ macro_rules! saxo_response_odata {
     };
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -197,9 +203,15 @@ mod tests {
     #[test]
     fn test_serde_o_data_params() {
         assert_de_tokens(
-            &ODataParams{top: Some(123), skip: Some(42)},
+            &ODataParams {
+                top: Some(123),
+                skip: Some(42),
+            },
             &[
-                Token::Struct { name: "ODataParams", len: 2 },
+                Token::Struct {
+                    name: "ODataParams",
+                    len: 2,
+                },
                 Token::Str("$top"),
                 Token::Some,
                 Token::U8(123),
@@ -207,28 +219,61 @@ mod tests {
                 Token::Some,
                 Token::U8(42),
                 Token::StructEnd,
-            ]
+            ],
         );
 
         assert_de_tokens(
             &ODataParams::default(),
             &[
-                Token::Struct { name: "ODataParams", len: 2 },
+                Token::Struct {
+                    name: "ODataParams",
+                    len: 2,
+                },
                 Token::Str("$top"),
                 Token::None,
                 Token::Str("$skip"),
                 Token::None,
                 Token::StructEnd,
-            ]
+            ],
         );
     }
 
     #[test]
     fn test_end_point_argument_display() {
         assert_eq!(format!("{}", EndPointArgument::Id("me")), "me");
-        assert_eq!(format!("{}", EndPointArgument::OData(ODataParams::default())), "?");
-        assert_eq!(format!("{}", EndPointArgument::OData(ODataParams{top: Some(10), skip: None})), "?$top=10");
-        assert_eq!(format!("{}", EndPointArgument::OData(ODataParams{top: None, skip: Some(42)})), "?$skip=42");
-        assert_eq!(format!("{}", EndPointArgument::OData(ODataParams{top: Some(10), skip: Some(42)})), "?$top=10&$skip=42");
+        assert_eq!(
+            format!("{}", EndPointArgument::OData(ODataParams::default())),
+            "?"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                EndPointArgument::OData(ODataParams {
+                    top: Some(10),
+                    skip: None
+                })
+            ),
+            "?$top=10"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                EndPointArgument::OData(ODataParams {
+                    top: None,
+                    skip: Some(42)
+                })
+            ),
+            "?$skip=42"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                EndPointArgument::OData(ODataParams {
+                    top: Some(10),
+                    skip: Some(42)
+                })
+            ),
+            "?$top=10&$skip=42"
+        );
     }
 }

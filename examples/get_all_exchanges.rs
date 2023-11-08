@@ -20,7 +20,12 @@ fn get_token() -> String {
 async fn main() -> Result<(), Box<dyn Error>> {
     let client = SaxoClient::new_sim(&get_token())?;
 
-    let resp = client.get_ref_exchanges2(ODataParams{top: Some(5), skip: Some(0)}).await?;
+    let resp = client
+        .get_ref_exchanges2(ODataParams {
+            top: Some(5),
+            skip: Some(0),
+        })
+        .await?;
     println!("{:?}", &resp);
     let next_resp = resp.next().await?;
     println!("{:?}", &next_resp);

@@ -1,6 +1,6 @@
 use crate::error::{ErrorCode, SaxoBadRequest, SaxoClientError, SaxoError};
 use crate::messages::{portfolio, reference_data};
-use crate::{SaxoRequest, SaxoResponse, SaxoResponseOData, EndPointArgument, ODataParams};
+use crate::{EndPointArgument, ODataParams, SaxoRequest, SaxoResponse, SaxoResponseOData};
 
 use async_trait::async_trait;
 use mockall::automock;
@@ -161,16 +161,26 @@ impl<S: HttpSend> SaxoClient<S> {
 
     pub async fn get_ref_exchanges(
         &self,
-    ) -> Result<reference_data::exchanges::Response, SaxoError> { // TODO: return a next handle?
-        self.get(reference_data::exchanges::Request::new(ODataParams { top: Some(5), skip: Some(0) })).await
+    ) -> Result<reference_data::exchanges::Response, SaxoError> {
+        // TODO: return a next handle?
+        self.get(reference_data::exchanges::Request::new(ODataParams {
+            top: Some(5),
+            skip: Some(0),
+        }))
+        .await
     }
 
     pub async fn get_ref_exchanges2(
         &self,
-        params: ODataParams
+        params: ODataParams,
     ) -> Result<NextHandle<'_, S, reference_data::exchanges::Response>, SaxoError> {
-        let resp = self.get(reference_data::exchanges::Request::new(params)).await;
-        Ok(NextHandle{client: self, resp: resp?})
+        let resp = self
+            .get(reference_data::exchanges::Request::new(params))
+            .await;
+        Ok(NextHandle {
+            client: self,
+            resp: resp?,
+        })
     }
 }
 
@@ -180,16 +190,22 @@ pub struct NextHandle<'a, S: HttpSend, T: SaxoResponseOData> {
 }
 
 impl<'a, S: HttpSend, T: SaxoResponseOData> NextHandle<'a, S, T> {
-    pub async fn next(self) -> Result<NextHandle<'a, S, <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType>, SaxoError>
+    pub async fn next(
+        self,
+    ) -> Result<
+        NextHandle<'a, S, <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType>,
+        SaxoError,
+    >
     where
         <T as SaxoResponse>::RequestType: SaxoRequest,
         for<'de> <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: Deserialize<'de>,
-        <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: SaxoResponseOData
+        <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: SaxoResponseOData,
     {
-        let resp = self.client
-            .get_next(&self.resp)
-            .await;
-        Ok(NextHandle { client: self.client, resp: resp? })
+        let resp = self.client.get_next(&self.resp).await;
+        Ok(NextHandle {
+            client: self.client,
+            resp: resp?,
+        })
     }
 }
 
@@ -316,13 +332,13 @@ mod tests {
                     .status(200)
                     .body(
                         json!({
-                            "__next": "/foo/bar/?$top=123&$skip=42",
-                            "Data": [
-                              {
-                                "Foo": "Bar",
-                              }
-                            ]
-                          })
+                          "__next": "/foo/bar/?$top=123&$skip=42",
+                          "Data": [
+                            {
+                              "Foo": "Bar",
+                            }
+                          ]
+                        })
                         .to_string(),
                     )
                     .unwrap(),
@@ -330,7 +346,12 @@ mod tests {
         });
 
         let client = SaxoClient::sim_with_sender(mock_sender, "").unwrap();
-        let resp = client.get(Request::new(ODataParams { top: Some(123), skip: Some(42) })).await;
+        let resp = client
+            .get(Request::new(ODataParams {
+                top: Some(123),
+                skip: Some(42),
+            }))
+            .await;
 
         #[cfg(debug_assertions)]
         dbg!(&resp);
