@@ -1,11 +1,9 @@
 use std::collections::HashMap;
-use std::error;
 use std::fmt;
 
 use serde::de::Error;
 use serde::ser::StdError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::Map;
 
 #[derive(thiserror::Error, Debug)]
 #[error(transparent)]
@@ -15,10 +13,15 @@ pub struct SaxoClientError(#[from] reqwest::Error);
 pub enum SaxoError {
     #[error("HTTP error")]
     HTTPError(#[from] Box<dyn StdError>),
+
     #[error("unauthorized. Did you forget a valid Open API token?")]
     Unauthorized,
+
     #[error("Bad request")]
     BadRequest(SaxoBadRequest),
+
+    #[error("Ill-formed OData ")]
+    IllFormedOData,
 }
 
 impl From<reqwest::Error> for SaxoError {
@@ -38,9 +41,11 @@ pub struct SaxoBadRequest {
 }
 
 impl SaxoBadRequest {
+    #[must_use]
     pub fn error_code(&self) -> &ErrorCode {
         &self.ErrorCode
     }
+    #[must_use]
     pub fn message(&self) -> &str {
         &self.Message
     }

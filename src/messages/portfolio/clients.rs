@@ -3,7 +3,7 @@
 
 use crate::{saxo_request, saxo_response};
 
-saxo_request!("port/v1/clients/");
+saxo_request! {"port/v1/clients/"}
 saxo_response! {
     account_value_protection_limit: f32,
     allowed_netting_profiles: Vec<String>,

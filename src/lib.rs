@@ -1,4 +1,6 @@
-#![allow(unused)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::module_name_repetitions)]
 
 pub mod client;
 pub mod error;
@@ -14,7 +16,7 @@ pub enum EndPointArgument {
 impl fmt::Display for EndPointArgument {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            EndPointArgument::Id(id) => write!(f, "{}", id),
+            EndPointArgument::Id(id) => write!(f, "{id}"),
             EndPointArgument::OData(odata) => {
                 let mid = if odata.top.is_some() && odata.skip.is_some() {
                     "&"
@@ -24,13 +26,11 @@ impl fmt::Display for EndPointArgument {
                 write!(
                     f,
                     "?{}{}{}",
-                    odata
-                        .top
-                        .map_or("".to_string(), |top| format!("$top={}", top)),
+                    odata.top.map_or(String::new(), |top| format!("$top={top}")),
                     mid,
                     odata
                         .skip
-                        .map_or("".to_string(), |skip| format!("$skip={}", skip))
+                        .map_or(String::new(), |skip| format!("$skip={skip}"))
                 )
             }
         }
@@ -61,7 +61,7 @@ pub trait SaxoResponseOData: SaxoResponse {
     fn next(&self) -> Option<Self::RequestType>;
 }
 
-/// Defines a Request and implements SaxoRequest trait with specified path.
+/// Defines a Request and implements `SaxoRequest` trait with specified path.
 /// Following example shows usage:
 /// TODO: Create example
 #[macro_export]
@@ -75,6 +75,7 @@ macro_rules! saxo_request {
         }
 
         impl Request {
+            #[must_use]
             pub fn new(id: &'static str) -> Self {
                 Request {
                     argument: EndPointArgument::Id(id),
@@ -108,6 +109,7 @@ macro_rules! saxo_request_odata {
         }
 
         impl Request {
+            #[must_use]
             pub fn new(params: ODataParams) -> Self {
                 Request {
                     argument: EndPointArgument::OData(params),

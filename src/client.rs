@@ -1,15 +1,13 @@
-use crate::error::{ErrorCode, SaxoBadRequest, SaxoClientError, SaxoError};
+use crate::error::{SaxoBadRequest, SaxoClientError, SaxoError};
 use crate::messages::{portfolio, reference_data};
-use crate::{EndPointArgument, ODataParams, SaxoRequest, SaxoResponse, SaxoResponseOData};
+use crate::{ODataParams, SaxoRequest, SaxoResponse, SaxoResponseOData};
 
 use async_trait::async_trait;
 use mockall::automock;
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::Url;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 
-use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
@@ -87,7 +85,7 @@ impl<S: HttpSend> SaxoClient<S> {
         headers.insert("Accept", HeaderValue::from_static("*/*"));
         headers.insert(
             "Authorization",
-            HeaderValue::from_str(format!("BEARER {}", token).as_str())
+            HeaderValue::from_str(format!("BEARER {token}").as_str())
                 .unwrap_or(HeaderValue::from_static("*/*")),
         );
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -148,7 +146,8 @@ impl<S: HttpSend> SaxoClient<S> {
         <T as SaxoResponse>::RequestType: SaxoRequest,
         for<'de> <<T as SaxoResponse>::RequestType as SaxoRequest>::ResponseType: Deserialize<'de>,
     {
-        self.get(resp.next().unwrap()).await // TODO: Fix unwrap
+        self.get(resp.next().ok_or(SaxoError::IllFormedOData)?)
+            .await
     }
 
     pub async fn get_port_user_info<'de>(&self) -> Result<portfolio::users::Response, SaxoError> {
@@ -161,22 +160,17 @@ impl<S: HttpSend> SaxoClient<S> {
 
     pub async fn get_ref_exchanges(
         &self,
+        params: ODataParams,
     ) -> Result<reference_data::exchanges::Response, SaxoError> {
-        // TODO: return a next handle?
-        self.get(reference_data::exchanges::Request::new(ODataParams {
-            top: Some(5),
-            skip: Some(0),
-        }))
-        .await
+        self.get(reference_data::exchanges::Request::new(params))
+            .await
     }
 
     pub async fn get_ref_exchanges2(
         &self,
         params: ODataParams,
     ) -> Result<NextHandle<'_, S, reference_data::exchanges::Response>, SaxoError> {
-        let resp = self
-            .get(reference_data::exchanges::Request::new(params))
-            .await;
+        let resp = self.get_ref_exchanges(params).await;
         Ok(NextHandle {
             client: self,
             resp: resp?,
@@ -219,15 +213,11 @@ impl<'a, S: HttpSend, T: SaxoResponseOData> fmt::Debug for NextHandle<'a, S, T> 
 mod tests {
     use super::*;
 
-    use crate::{saxo_request_odata, saxo_response_odata};
-    use reqwest::Response;
+    use crate::{error::ErrorCode, saxo_request_odata, saxo_response_odata};
     use serde_json::json;
 
     #[tokio::test]
     async fn test_parse_ok() {
-        let mut mock_sender = MockHttpSend::new();
-        let client = SaxoClient::sim_with_sender(mock_sender, "");
-
         let response =
             reqwest::Response::from(http::Response::builder().status(200).body("{}").unwrap());
         let api_response =
@@ -240,9 +230,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_parse_unauthorized() {
-        let mut mock_sender = MockHttpSend::new();
-        let client = SaxoClient::sim_with_sender(mock_sender, "");
-
         let response =
             reqwest::Response::from(http::Response::builder().status(401).body("{}").unwrap());
         let api_response =
@@ -257,9 +244,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_parse_bad_request() {
-        let mut mock_sender = MockHttpSend::new();
-        let client = SaxoClient::sim_with_sender(mock_sender, "");
-
         let status = 400;
         let response_body = json!({
             "ErrorCode": "InvalidRequest",

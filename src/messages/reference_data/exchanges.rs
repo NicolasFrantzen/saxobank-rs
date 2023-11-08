@@ -1,5 +1,4 @@
 use crate::{saxo_request_odata, saxo_response_odata};
-use saxobank_macro::{SaxoRequest, SaxoResponse};
 
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
