@@ -89,7 +89,7 @@ mod tests {
 
         let response_deserialized = serde_json::from_str::<ExchangeSession>(&response.to_string());
         assert!(response_deserialized.is_ok());
-        println!("{:?}", response_deserialized);
+        println!("{response_deserialized:?}");
     }
 
     #[test]
@@ -113,6 +113,6 @@ mod tests {
 
         let response_deserialized = serde_json::from_str::<Response>(&response.to_string());
         assert!(response_deserialized.is_ok());
-        println!("{:?}", response_deserialized);
+        println!("{response_deserialized:?}");
     }
 }

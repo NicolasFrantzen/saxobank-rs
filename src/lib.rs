@@ -7,6 +7,7 @@ pub mod error;
 pub mod messages;
 
 use std::fmt;
+use std::fmt::Formatter;
 
 pub enum EndPointArgument {
     Id(&'static str),
@@ -18,22 +19,32 @@ impl fmt::Display for EndPointArgument {
         match self {
             EndPointArgument::Id(id) => write!(f, "{id}"),
             EndPointArgument::OData(odata) => {
-                let mid = if odata.top.is_some() && odata.skip.is_some() {
-                    "&"
-                } else {
-                    ""
-                };
-                write!(
-                    f,
-                    "?{}{}{}",
-                    odata.top.map_or(String::new(), |top| format!("$top={top}")),
-                    mid,
-                    odata
-                        .skip
-                        .map_or(String::new(), |skip| format!("$skip={skip}"))
-                )
+                let mid = Self::get_mid(odata);
+                Self::write_end_point(f, odata, mid)
             }
         }
+    }
+}
+
+impl EndPointArgument {
+    fn write_end_point(f: &mut Formatter, odata: &ODataParams, mid: &str) -> std::fmt::Result {
+        write!(
+            f,
+            "?{}{}{}",
+            odata.top.map_or(String::new(), |top| format!("$top={top}")),
+            mid,
+            odata
+                .skip
+                .map_or(String::new(), |skip| format!("$skip={skip}"))
+        )
+    }
+
+    fn get_mid(odata: &ODataParams) -> &str {
+        (if odata.top.is_some() && odata.skip.is_some() {
+            "&"
+        } else {
+            ""
+        }) as _
     }
 }
 

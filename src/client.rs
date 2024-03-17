@@ -81,6 +81,14 @@ impl<S: HttpSend> SaxoClient<S> {
     }
 
     fn build_client(token: &str) -> reqwest::Result<reqwest::Client> {
+        let headers = Self::create_headers(token);
+
+        reqwest::ClientBuilder::new()
+            .default_headers(headers)
+            .build()
+    }
+
+    fn create_headers(token: &str) -> HeaderMap {
         let mut headers = HeaderMap::new();
         headers.insert("Accept", HeaderValue::from_static("*/*"));
         headers.insert(
@@ -89,10 +97,7 @@ impl<S: HttpSend> SaxoClient<S> {
                 .unwrap_or(HeaderValue::from_static("*/*")),
         );
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
-
-        reqwest::ClientBuilder::new()
-            .default_headers(headers)
-            .build()
+        headers
     }
 
     async fn get<T: SaxoRequest>(&self, request: T) -> Result<T::ResponseType, SaxoError>

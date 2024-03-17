@@ -235,7 +235,7 @@ mod tests {
              },
         });
 
-        println!("{:?}", bad_request);
+        println!("{bad_request:?}");
         let _bad_request_deserialized: SaxoBadRequest =
             serde_json::from_str(&bad_request.to_string()).unwrap();
     }
